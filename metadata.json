@@ -1,0 +1,8 @@
+{
+  "name": "CerrajeríaIA – Plataforma",
+  "description": "Mini web-app para servicios de cerrajería, academia, tienda y control de planes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
