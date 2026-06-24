@@ -35,8 +35,7 @@ function AppContent() {
     { label: 'Ubicación', view: 'CerrajeroYa', icon: <MapPin /> },
     { label: 'Tienda', view: 'Tienda', icon: <ShoppingCart /> },
     { label: 'Videos', view: 'Videos', icon: <Play /> },
-    { label: 'Premium', view: 'EbookPremium', icon: <Book /> },
-    { label: 'Admin', view: 'AdminPanel', icon: <Settings /> },
+    { label: 'Ebook', view: 'EbookPremium', icon: <Book /> },
   ];
 
   return (
@@ -44,12 +43,18 @@ function AppContent() {
       
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 bg-[#0a0a0a] border-b border-[#D4AF37]/30 shrink-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" onClick={() => setCurrentView('Inicio')} style={{ cursor: 'pointer' }}>
           <div className="w-8 h-8 bg-gradient-to-br from-[#D4AF37] to-[#8A6D3B] rounded-lg flex items-center justify-center">
             <Key className="w-5 h-5 text-black" />
           </div>
           <h1 className="text-xl font-serif italic text-[#D4AF37] tracking-tight">CerrajeríaIA</h1>
         </div>
+        <button 
+          onClick={() => setCurrentView('AdminPanel')}
+          className="px-3 py-1.5 text-[10px] border border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-black transition-colors rounded uppercase font-bold"
+        >
+          Admin
+        </button>
       </header>
 
       <div className="flex-1 overflow-y-auto pb-24 bg-[radial-gradient(circle_at_center,_#1a1a1a_0%,_#050505_100%)]">

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, MapPin, ShoppingCart, Play, Key } from 'lucide-react';
+import { BookOpen, MapPin, ShoppingCart, Play, Key, Book } from 'lucide-react';
 import { ViewType } from '../types';
 
 export const Inicio = ({ navigate }: { navigate: (v: ViewType) => void }) => {
@@ -51,6 +51,15 @@ export const Inicio = ({ navigate }: { navigate: (v: ViewType) => void }) => {
           <div className="flex flex-col gap-1">
             <h3 className="font-bold text-white text-sm">Videos</h3>
             <p className="text-[10px] text-zinc-500">Tutoriales Paso a Paso</p>
+          </div>
+        </button>
+        <button onClick={() => navigate('EbookPremium')} className="col-span-2 bg-zinc-900 border border-zinc-800 p-6 rounded-xl flex flex-col items-center justify-center text-center gap-3 hover:border-[#D4AF37] group transition-all cursor-pointer active:scale-95">
+          <div className="p-3 bg-zinc-800 rounded-full group-hover:bg-[#D4AF37]/10 transition-colors">
+            <Book className="w-8 h-8 text-[#D4AF37]" strokeWidth={1.5} />
+          </div>
+          <div className="flex flex-col gap-1">
+            <h3 className="font-bold text-white text-sm">Ebook Premium</h3>
+            <p className="text-[10px] text-zinc-500">El Arte de la Cerrajería</p>
           </div>
         </button>
       </div>
