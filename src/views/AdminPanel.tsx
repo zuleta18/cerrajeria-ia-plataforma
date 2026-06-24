@@ -107,7 +107,7 @@ export const AdminPanel = () => {
               />
             </div>
             <div>
-              <label className="text-xs text-zinc-500 mb-1 block">Video 3 (Short/Vertical - URL del embed)</label>
+              <label className="text-xs text-zinc-500 mb-1 block">Video 3 (URL del embed)</label>
               <input 
                 type="text" 
                 value={yt3}

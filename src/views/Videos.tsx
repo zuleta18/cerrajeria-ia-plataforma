@@ -15,7 +15,7 @@ export const Videos = () => {
       <div className="space-y-6">
         {config.youtubeLinks.map((url, idx) => (
           <div key={idx} className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-lg">
-            <div className={`w-full bg-black ${url.includes('OXRP1KPZvYg') || idx === 2 ? 'aspect-[9/16] max-w-sm mx-auto' : 'aspect-video'}`}>
+            <div className="w-full bg-black aspect-video">
               {url ? (
                 <iframe 
                   className="w-full h-full"

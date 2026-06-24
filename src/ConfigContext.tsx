@@ -5,7 +5,7 @@ const defaultConfig: AppConfig = {
   youtubeLinks: [
     'https://www.youtube.com/embed/oSY_P_GyyQY',
     'https://www.youtube.com/embed/PunUmi69pFk',
-    'https://www.youtube.com/embed/OXRP1KPZvYg'
+    'https://www.youtube.com/embed/YNb7oIJOVpw'
   ],
   hotmartLink: 'https://go.hotmart.com/U105937574Y',
   prices: {
