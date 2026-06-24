@@ -3,10 +3,11 @@ import { AppConfig } from './types';
 
 const defaultConfig: AppConfig = {
   youtubeLinks: [
-    'https://www.youtube.com/embed/dQw4w9WgXcQ',
-    'https://www.youtube.com/embed/tgbNymZ7vqY'
+    'https://www.youtube.com/embed/oSY_P_GyyQY',
+    'https://www.youtube.com/embed/PunUmi69pFk',
+    'https://www.youtube.com/embed/OXRP1KPZvYg'
   ],
-  hotmartLink: 'https://hotmart.com/es',
+  hotmartLink: 'https://go.hotmart.com/U105937574Y',
   prices: {
     semanal: 15000,
     quincenal: 25000,

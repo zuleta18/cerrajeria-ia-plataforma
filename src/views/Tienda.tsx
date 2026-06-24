@@ -4,24 +4,24 @@ import { ShoppingBag, ExternalLink } from 'lucide-react';
 const PRODUCTS = [
   {
     id: 1,
-    name: 'Kit de Ganzúas Profesionales (24 piezas)',
-    price: '$120.000',
+    name: 'Kit Multifuncional Profesional',
+    price: 'Consulta el precio actual',
     image: 'https://images.unsplash.com/photo-1588628566587-bf5c464c76cb?w=400&q=80',
-    amazonUrl: 'https://amazon.com'
+    amazonUrl: 'https://amzn.to/3Qiyj91'
   },
   {
     id: 2,
-    name: 'Máquina Duplicadora de Llaves Xhorse',
-    price: '$2.500.000',
+    name: 'Herramientas Mecánicas Antideslizantes',
+    price: 'Consulta el precio actual',
     image: 'https://images.unsplash.com/photo-1621360155099-01584ea414c7?w=400&q=80',
-    amazonUrl: 'https://amazon.com'
+    amazonUrl: 'https://amzn.to/4uR4YQU'
   },
   {
     id: 3,
-    name: 'Cilindro de Seguridad Anti-Bumping',
-    price: '$85.000',
+    name: 'Kit Ganzúas de Precisión',
+    price: 'Consulta el precio actual',
     image: 'https://images.unsplash.com/photo-1510657999885-3b09cedd496a?w=400&q=80',
-    amazonUrl: 'https://amazon.com'
+    amazonUrl: 'https://amzn.to/4eYowye'
   }
 ];
 

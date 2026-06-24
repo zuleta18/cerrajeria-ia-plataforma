@@ -11,6 +11,7 @@ export const AdminPanel = () => {
   // Local state for forms
   const [yt1, setYt1] = useState(config.youtubeLinks[0] || '');
   const [yt2, setYt2] = useState(config.youtubeLinks[1] || '');
+  const [yt3, setYt3] = useState(config.youtubeLinks[2] || '');
   const [hotmart, setHotmart] = useState(config.hotmartLink);
   const [semanal, setSemanal] = useState(config.prices.semanal.toString());
   const [quincenal, setQuincenal] = useState(config.prices.quincenal.toString());
@@ -29,7 +30,7 @@ export const AdminPanel = () => {
 
   const handleSave = () => {
     updateConfig({
-      youtubeLinks: [yt1, yt2],
+      youtubeLinks: [yt1, yt2, yt3],
       hotmartLink: hotmart,
       prices: {
         semanal: parseInt(semanal) || 0,
@@ -102,6 +103,15 @@ export const AdminPanel = () => {
                 type="text" 
                 value={yt2}
                 onChange={(e) => setYt2(e.target.value)}
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-[#D4AF37] transition-colors"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-zinc-500 mb-1 block">Video 3 (Short/Vertical - URL del embed)</label>
+              <input 
+                type="text" 
+                value={yt3}
+                onChange={(e) => setYt3(e.target.value)}
                 className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-[#D4AF37] transition-colors"
               />
             </div>
