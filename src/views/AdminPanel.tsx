@@ -4,7 +4,7 @@ import { useConfig } from '../ConfigContext';
 
 export const AdminPanel = () => {
   const { config, updateConfig } = useConfig();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => localStorage.getItem('adminAuth') === 'true');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
@@ -21,6 +21,7 @@ export const AdminPanel = () => {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (password === 'edinson-18972063') { // Simple hardcoded password as requested "solo para mi"
+      localStorage.setItem('adminAuth', 'true');
       setIsAuthenticated(true);
       setError('');
     } else {
@@ -91,14 +92,24 @@ export const AdminPanel = () => {
 
   return (
     <div className="p-4 max-w-md mx-auto w-full pb-12">
-      <div className="flex items-center justify-between mb-8 mt-4">
-        <div className="flex items-center gap-2">
-          <Settings className="w-6 h-6 text-[#D4AF37]" />
-          <h2 className="text-xl font-serif text-white">Configuración</h2>
+      <div className="flex flex-col gap-4 mb-8 mt-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Settings className="w-6 h-6 text-[#D4AF37]" />
+            <h2 className="text-xl font-serif text-white">Configuración</h2>
+          </div>
+          <button 
+            onClick={() => {
+              localStorage.removeItem('adminAuth');
+              setIsAuthenticated(false);
+            }} 
+            className="flex items-center gap-2 text-red-400 hover:text-red-300 px-3 py-2 rounded-lg bg-red-500/10 transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:inline">Cerrar sesión de administrador</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider sm:hidden">Cerrar sesión</span>
+          </button>
         </div>
-        <button onClick={() => setIsAuthenticated(false)} className="text-zinc-500 hover:text-zinc-300 p-2">
-          <LogOut className="w-5 h-5" />
-        </button>
       </div>
 
       <div className="space-y-8">
