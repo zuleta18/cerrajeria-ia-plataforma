@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Lock, Save, LogOut, CheckCircle, Clock } from 'lucide-react';
+import { Settings, Lock, Save, LogOut, CheckCircle, Clock, Trash2, Plus } from 'lucide-react';
 import { useConfig } from '../ConfigContext';
 
 export const AdminPanel = () => {
@@ -16,6 +16,7 @@ export const AdminPanel = () => {
   const [semanal, setSemanal] = useState(config.prices.semanal.toString());
   const [quincenal, setQuincenal] = useState(config.prices.quincenal.toString());
   const [mensual, setMensual] = useState(config.prices.mensual.toString());
+  const [products, setProducts] = useState(config.products || []);
   const [savedMessage, setSavedMessage] = useState(false);
 
   const handleLogin = (e: React.FormEvent) => {
@@ -38,7 +39,8 @@ export const AdminPanel = () => {
         semanal: parseInt(semanal) || 0,
         quincenal: parseInt(quincenal) || 0,
         mensual: parseInt(mensual) || 0
-      }
+      },
+      products: products
     });
     setSavedMessage(true);
     setTimeout(() => setSavedMessage(false), 3000);
@@ -192,6 +194,101 @@ export const AdminPanel = () => {
                 className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-2 text-sm text-zinc-100 focus:outline-none focus:border-[#D4AF37] transition-colors text-center"
               />
             </div>
+          </div>
+        </div>
+
+        {/* Products */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-[#D4AF37] uppercase tracking-wider">Productos Tienda</h3>
+            <button 
+              onClick={() => setProducts([...products, { id: Date.now().toString(), name: '', image: '', price: '', link: '', category: '' }])}
+              className="flex items-center gap-1 text-[10px] bg-[#D4AF37] text-black font-bold px-2 py-1 rounded uppercase hover:opacity-90 transition-opacity"
+            >
+              <Plus className="w-3 h-3" /> Añadir
+            </button>
+          </div>
+          <div className="space-y-4">
+            {products.map((product, index) => (
+              <div key={product.id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-3 relative">
+                <button 
+                  onClick={() => setProducts(products.filter(p => p.id !== product.id))}
+                  className="absolute top-4 right-4 text-zinc-500 hover:text-red-400 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+                <div className="pr-8">
+                  <label className="text-xs text-zinc-500 mb-1 block">Nombre</label>
+                  <input 
+                    type="text" 
+                    value={product.name}
+                    onChange={(e) => {
+                      const newProducts = [...products];
+                      newProducts[index].name = e.target.value;
+                      setProducts(newProducts);
+                    }}
+                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-[#D4AF37] transition-colors"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-zinc-500 mb-1 block">Precio</label>
+                    <input 
+                      type="text" 
+                      value={product.price}
+                      onChange={(e) => {
+                        const newProducts = [...products];
+                        newProducts[index].price = e.target.value;
+                        setProducts(newProducts);
+                      }}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-[#D4AF37] transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-zinc-500 mb-1 block">Categoría</label>
+                    <input 
+                      type="text" 
+                      value={product.category}
+                      onChange={(e) => {
+                        const newProducts = [...products];
+                        newProducts[index].category = e.target.value;
+                        setProducts(newProducts);
+                      }}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-[#D4AF37] transition-colors"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-zinc-500 mb-1 block">URL Imagen</label>
+                  <input 
+                    type="text" 
+                    value={product.image}
+                    onChange={(e) => {
+                      const newProducts = [...products];
+                      newProducts[index].image = e.target.value;
+                      setProducts(newProducts);
+                    }}
+                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-[#D4AF37] transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-zinc-500 mb-1 block">URL Link Afiliado</label>
+                  <input 
+                    type="text" 
+                    value={product.link}
+                    onChange={(e) => {
+                      const newProducts = [...products];
+                      newProducts[index].link = e.target.value;
+                      setProducts(newProducts);
+                    }}
+                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-[#D4AF37] transition-colors"
+                  />
+                </div>
+              </div>
+            ))}
+            {products.length === 0 && (
+              <p className="text-zinc-500 text-xs text-center py-2">No hay productos. Añade uno nuevo.</p>
+            )}
           </div>
         </div>
 
