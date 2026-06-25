@@ -13,6 +13,8 @@ import { Videos } from './views/Videos';
 import { EbookPremium } from './views/EbookPremium';
 import { AdminPanel } from './views/AdminPanel';
 
+import { PortalCerrajero } from './views/PortalCerrajero';
+
 function AppContent() {
   const [currentView, setCurrentView] = useState<ViewType>('Inicio');
 
@@ -20,11 +22,12 @@ function AppContent() {
     switch (currentView) {
       case 'Inicio': return <Inicio navigate={setCurrentView} />;
       case 'Academia': return <Academia />;
-      case 'CerrajeroYa': return <CerrajeroYa />;
+      case 'CerrajeroYa': return <CerrajeroYa navigate={setCurrentView} />;
       case 'Tienda': return <Tienda />;
       case 'Videos': return <Videos />;
       case 'EbookPremium': return <EbookPremium />;
       case 'AdminPanel': return <AdminPanel />;
+      case 'PortalCerrajero': return <PortalCerrajero />;
       default: return <Inicio navigate={setCurrentView} />;
     }
   };

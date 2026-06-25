@@ -1,15 +1,19 @@
 import React from 'react';
-import { MapPin, Star, Navigation } from 'lucide-react';
+import { MapPin, Star, Navigation, UserCircle } from 'lucide-react';
 import { useConfig } from '../ConfigContext';
+import { ViewType } from '../types';
 
-const LOCKSMITHS = [
-  { id: 1, name: 'Juan Pérez', rating: 4.8, distance: '1.2 km' },
-  { id: 2, name: 'Carlos Gomez', rating: 4.9, distance: '2.5 km' },
-  { id: 3, name: 'Miguel Rojas', rating: 4.6, distance: '3.8 km' },
-];
-
-export const CerrajeroYa = () => {
+export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) => {
   const { config } = useConfig();
+
+  const calculateFreeDays = (registrationDate: string) => {
+    const start = new Date(registrationDate).getTime();
+    const now = new Date().getTime();
+    const diffDays = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+    return Math.max(0, 90 - diffDays);
+  };
+
+  const activeLocksmiths = config.locksmiths.filter(l => l.isPaidActive || calculateFreeDays(l.registrationDate) > 0);
 
   return (
     <div className="flex flex-col pb-8">
@@ -34,44 +38,36 @@ export const CerrajeroYa = () => {
 
         {/* Nearby */}
         <div>
-          <h3 className="text-zinc-400 text-sm font-medium mb-3 uppercase tracking-wider">Cerrajeros Cercanos</h3>
-          <div className="space-y-3">
-            {LOCKSMITHS.map(locksmith => (
-              <div key={locksmith.id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex items-center justify-between">
-                <div>
-                  <h4 className="text-zinc-100 font-medium">{locksmith.name}</h4>
-                  <div className="flex items-center gap-1 mt-1">
-                    <Star className="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]" />
-                    <span className="text-xs text-zinc-400">{locksmith.rating}</span>
+          <h3 className="text-zinc-400 text-sm font-medium mb-3 uppercase tracking-wider">Cerrajeros Cercanos ({activeLocksmiths.length})</h3>
+          {activeLocksmiths.length === 0 ? (
+            <p className="text-zinc-500 text-sm text-center py-4 bg-zinc-900 border border-zinc-800 rounded-xl">No hay cerrajeros disponibles en este momento.</p>
+          ) : (
+            <div className="space-y-3">
+              {activeLocksmiths.map(locksmith => (
+                <div key={locksmith.id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex items-center justify-between">
+                  <div>
+                    <h4 className="text-zinc-100 font-medium">{locksmith.name}</h4>
+                    <div className="flex items-center gap-1 mt-1">
+                      <Star className="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]" />
+                      <span className="text-xs text-zinc-400">{locksmith.rating}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 text-zinc-500">
+                    <MapPin className="w-4 h-4" />
+                    <span className="text-xs">{locksmith.distance}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-1 text-zinc-500">
-                  <MapPin className="w-4 h-4" />
-                  <span className="text-xs">{locksmith.distance}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Plans */}
+        {/* Portal CTA */}
         <div className="pt-4 border-t border-zinc-800">
-          <h3 className="text-zinc-400 text-sm font-medium mb-4 uppercase tracking-wider">Planes de Afiliación</h3>
-          <div className="grid grid-cols-3 gap-2">
-            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-3 text-center flex flex-col justify-center">
-              <span className="block text-xs text-zinc-500 mb-1">Semanal</span>
-              <span className="block text-sm font-semibold text-[#D4AF37]">${config.prices.semanal.toLocaleString('es-CO')}</span>
-            </div>
-            <div className="bg-zinc-900 border border-[#D4AF37]/50 rounded-lg p-3 text-center flex flex-col justify-center relative overflow-hidden">
-              <div className="absolute top-0 right-0 bg-gradient-to-r from-[#D4AF37] to-[#8A6D3B] text-black text-[9px] font-bold px-1.5 py-0.5 rounded-bl-sm">PRO</div>
-              <span className="block text-xs text-zinc-500 mb-1">Quincenal</span>
-              <span className="block text-sm font-semibold text-[#D4AF37]">${config.prices.quincenal.toLocaleString('es-CO')}</span>
-            </div>
-            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-3 text-center flex flex-col justify-center">
-              <span className="block text-xs text-zinc-500 mb-1">Mensual</span>
-              <span className="block text-sm font-semibold text-[#D4AF37]">${config.prices.mensual.toLocaleString('es-CO')}</span>
-            </div>
-          </div>
+          <button onClick={() => navigate('PortalCerrajero')} className="w-full flex items-center justify-center gap-2 py-4 bg-zinc-900 hover:bg-zinc-800 border border-[#D4AF37]/30 text-[#D4AF37] font-semibold rounded-xl transition-all active:scale-95">
+            <UserCircle className="w-5 h-5" />
+            <span>Soy Cerrajero: Únete o inicia sesión</span>
+          </button>
         </div>
       </div>
     </div>

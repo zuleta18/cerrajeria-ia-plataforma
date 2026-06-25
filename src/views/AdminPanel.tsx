@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Lock, Save, LogOut } from 'lucide-react';
+import { Settings, Lock, Save, LogOut, CheckCircle, Clock } from 'lucide-react';
 import { useConfig } from '../ConfigContext';
 
 export const AdminPanel = () => {
@@ -30,6 +30,7 @@ export const AdminPanel = () => {
 
   const handleSave = () => {
     updateConfig({
+      ...config,
       youtubeLinks: [yt1, yt2, yt3],
       hotmartLink: hotmart,
       prices: {
@@ -40,6 +41,23 @@ export const AdminPanel = () => {
     });
     setSavedMessage(true);
     setTimeout(() => setSavedMessage(false), 3000);
+  };
+
+  const calculateFreeDays = (registrationDate: string) => {
+    const start = new Date(registrationDate).getTime();
+    const now = new Date().getTime();
+    const diffDays = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+    return Math.max(0, 90 - diffDays);
+  };
+
+  const toggleLocksmithStatus = (id: string) => {
+    const updatedLocksmiths = config.locksmiths.map(l => {
+      if (l.id === id) {
+        return { ...l, isPaidActive: !l.isPaidActive };
+      }
+      return l;
+    });
+    updateConfig({ ...config, locksmiths: updatedLocksmiths });
   };
 
   if (!isAuthenticated) {
@@ -163,6 +181,51 @@ export const AdminPanel = () => {
                 className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-2 text-sm text-zinc-100 focus:outline-none focus:border-[#D4AF37] transition-colors text-center"
               />
             </div>
+          </div>
+        </div>
+
+        {/* Cerrajeros Registrados */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-medium text-[#D4AF37] uppercase tracking-wider">Cerrajeros Registrados ({config.locksmiths?.length || 0})</h3>
+          <div className="space-y-3">
+            {config.locksmiths?.map(locksmith => {
+              const freeDays = calculateFreeDays(locksmith.registrationDate);
+              const isActive = locksmith.isPaidActive || freeDays > 0;
+              return (
+                <div key={locksmith.id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col gap-2">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="text-zinc-100 font-bold text-sm">{locksmith.name}</h4>
+                      <p className="text-zinc-500 text-xs">{locksmith.phone} • {locksmith.zone}</p>
+                    </div>
+                    <div className="text-right">
+                      <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider ${isActive ? 'bg-[#D4AF37]/20 text-[#D4AF37]' : 'bg-red-500/20 text-red-400'}`}>
+                        {isActive ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 mt-2 pt-2 border-t border-zinc-800 text-xs text-zinc-400">
+                    <Clock className="w-3 h-3" />
+                    <span>Registro: {new Date(locksmith.registrationDate).toLocaleDateString()}</span>
+                    <span>•</span>
+                    <span className={freeDays > 0 ? 'text-[#D4AF37]' : 'text-red-400'}>{freeDays} días gratis</span>
+                  </div>
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="text-xs text-zinc-500">Plan: {locksmith.selectedPlan ? locksmith.selectedPlan.toUpperCase() : 'Ninguno'}</span>
+                    <button 
+                      onClick={() => toggleLocksmithStatus(locksmith.id)}
+                      className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${locksmith.isPaidActive ? 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700' : 'bg-[#D4AF37] text-black hover:opacity-90'}`}
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      {locksmith.isPaidActive ? 'Marcar como Impago' : 'Marcar como Pagado'}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+            {(!config.locksmiths || config.locksmiths.length === 0) && (
+              <p className="text-zinc-500 text-sm py-4 text-center">No hay cerrajeros registrados aún.</p>
+            )}
           </div>
         </div>
 
