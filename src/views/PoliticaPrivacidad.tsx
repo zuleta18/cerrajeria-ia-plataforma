@@ -83,8 +83,8 @@ export const PoliticaPrivacidad = () => {
           <h2 className="text-lg font-bold text-[#D4AF37] mb-3 border-b border-zinc-800 pb-2">9. Contacto</h2>
           <p className="mb-2">Si tiene preguntas sobre esta Política de Privacidad, puede contactarnos a través de:</p>
           <ul className="list-none space-y-2 ml-2 mb-6">
-            <li><strong className="text-white">WhatsApp:</strong> [agregar número]</li>
-            <li><strong className="text-white">Correo electrónico:</strong> [agregar correo]</li>
+            <li><strong className="text-white">WhatsApp:</strong> 3026437096 - 3162079286</li>
+            <li><strong className="text-white">Correo electrónico:</strong> zuleta502@hotmail.com</li>
             <li><strong className="text-white">Instagram/Facebook:</strong> La Llave del Éxito</li>
           </ul>
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mt-8 text-center text-xs text-zinc-500">
