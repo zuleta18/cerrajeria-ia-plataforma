@@ -20,7 +20,7 @@ export const AdminPanel = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === 'admin123') { // Simple hardcoded password as requested "solo para mi"
+    if (password === 'edinson-18972063') { // Simple hardcoded password as requested "solo para mi"
       setIsAuthenticated(true);
       setError('');
     } else {
