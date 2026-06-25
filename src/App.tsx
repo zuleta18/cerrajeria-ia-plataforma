@@ -3,6 +3,7 @@ import { Home, BookOpen, MapPin, ShoppingCart, Play, Book, Settings, Key } from 
 import { ViewType } from './types';
 import { ConfigProvider } from './ConfigContext';
 import { BannerAd } from './components/BannerAds';
+import { DisclaimerModal } from './components/DisclaimerModal';
 
 // Views
 import { Inicio } from './views/Inicio';
@@ -47,6 +48,7 @@ function AppContent() {
 
   return (
     <div className="bg-[#050505] text-white min-h-screen font-sans flex flex-col selection:bg-[#D4AF37]/30">
+      <DisclaimerModal />
       
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 bg-[#0a0a0a] border-b border-[#D4AF37]/30 shrink-0">
