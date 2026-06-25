@@ -4,6 +4,7 @@ import { ViewType } from './types';
 import { ConfigProvider } from './ConfigContext';
 import { BannerAd } from './components/BannerAds';
 import { DisclaimerModal } from './components/DisclaimerModal';
+import { AuthProvider } from './AuthContext';
 
 // Views
 import { Inicio } from './views/Inicio';
@@ -15,6 +16,9 @@ import { EbookPremium } from './views/EbookPremium';
 import { AdminPanel } from './views/AdminPanel';
 import { PoliticaPrivacidad } from './views/PoliticaPrivacidad';
 import { TerminosCondiciones } from './views/TerminosCondiciones';
+import { Login } from './views/Login';
+import { Registro } from './views/Registro';
+import { Chat } from './views/Chat';
 
 import { PortalCerrajero } from './views/PortalCerrajero';
 
@@ -30,9 +34,12 @@ function AppContent() {
       case 'Videos': return <Videos />;
       case 'EbookPremium': return <EbookPremium />;
       case 'AdminPanel': return <AdminPanel />;
-      case 'PortalCerrajero': return <PortalCerrajero />;
+      case 'PortalCerrajero': return <PortalCerrajero navigate={setCurrentView} />;
       case 'PoliticaPrivacidad': return <PoliticaPrivacidad />;
       case 'TerminosCondiciones': return <TerminosCondiciones />;
+      case 'Login': return <Login navigate={setCurrentView} />;
+      case 'Registro': return <Registro navigate={setCurrentView} />;
+      case 'Chat': return <Chat navigate={setCurrentView} />;
       default: return <Inicio navigate={setCurrentView} />;
     }
   };
@@ -114,8 +121,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <ConfigProvider>
-      <AppContent />
-    </ConfigProvider>
+    <AuthProvider>
+      <ConfigProvider>
+        <AppContent />
+      </ConfigProvider>
+    </AuthProvider>
   );
 }

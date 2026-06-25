@@ -33,4 +33,26 @@ export interface AppConfig {
   products: Product[];
 }
 
-export type ViewType = 'Inicio' | 'Academia' | 'CerrajeroYa' | 'Tienda' | 'Videos' | 'EbookPremium' | 'AdminPanel' | 'PortalCerrajero' | 'PoliticaPrivacidad' | 'TerminosCondiciones';
+export type ViewType = 'Inicio' | 'Academia' | 'CerrajeroYa' | 'Tienda' | 'Videos' | 'EbookPremium' | 'AdminPanel' | 'PortalCerrajero' | 'PoliticaPrivacidad' | 'TerminosCondiciones' | 'Login' | 'Registro' | 'Chat';
+
+export interface Solicitud {
+  id: string;
+  clienteId: string;
+  clienteNombre: string;
+  clienteTelefono: string;
+  ubicacion: { lat: number, lng: number };
+  tipoServicio: string;
+  estado: 'pendiente' | 'aceptado' | 'rechazado' | 'completado';
+  cerrajeroAsignadoId: string;
+  cerrajeroNombre?: string;
+  cerrajeroRating?: number;
+  timestamp: any;
+}
+
+export interface Mensaje {
+  id: string;
+  solicitudId: string;
+  remitenteId: string;
+  texto: string;
+  timestamp: any;
+}
