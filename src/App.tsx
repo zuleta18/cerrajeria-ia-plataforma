@@ -13,6 +13,7 @@ import { Videos } from './views/Videos';
 import { EbookPremium } from './views/EbookPremium';
 import { AdminPanel } from './views/AdminPanel';
 import { PoliticaPrivacidad } from './views/PoliticaPrivacidad';
+import { TerminosCondiciones } from './views/TerminosCondiciones';
 
 import { PortalCerrajero } from './views/PortalCerrajero';
 
@@ -30,6 +31,7 @@ function AppContent() {
       case 'AdminPanel': return <AdminPanel />;
       case 'PortalCerrajero': return <PortalCerrajero />;
       case 'PoliticaPrivacidad': return <PoliticaPrivacidad />;
+      case 'TerminosCondiciones': return <TerminosCondiciones />;
       default: return <Inicio navigate={setCurrentView} />;
     }
   };
@@ -68,12 +70,18 @@ function AppContent() {
         {currentView !== 'Inicio' && <BannerAd className="mx-4 mb-4 max-w-full" />}
         
         {/* Footer */}
-        <footer className="mt-8 mb-4 pb-4 flex justify-center border-t border-zinc-900 pt-6">
+        <footer className="mt-8 mb-4 pb-4 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 border-t border-zinc-900 pt-6">
           <button 
             onClick={() => setCurrentView('PoliticaPrivacidad')}
             className="text-xs text-zinc-500 hover:text-[#D4AF37] transition-colors underline decoration-zinc-700 underline-offset-4"
           >
             Política de Privacidad
+          </button>
+          <button 
+            onClick={() => setCurrentView('TerminosCondiciones')}
+            className="text-xs text-zinc-500 hover:text-[#D4AF37] transition-colors underline decoration-zinc-700 underline-offset-4"
+          >
+            Términos y Condiciones
           </button>
         </footer>
       </div>

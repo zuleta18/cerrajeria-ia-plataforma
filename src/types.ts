@@ -33,4 +33,4 @@ export interface AppConfig {
   products: Product[];
 }
 
-export type ViewType = 'Inicio' | 'Academia' | 'CerrajeroYa' | 'Tienda' | 'Videos' | 'EbookPremium' | 'AdminPanel' | 'PortalCerrajero' | 'PoliticaPrivacidad';
+export type ViewType = 'Inicio' | 'Academia' | 'CerrajeroYa' | 'Tienda' | 'Videos' | 'EbookPremium' | 'AdminPanel' | 'PortalCerrajero' | 'PoliticaPrivacidad' | 'TerminosCondiciones';
