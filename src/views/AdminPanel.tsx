@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Settings, Lock, Save, LogOut, CheckCircle, Clock, Trash2, Plus } from 'lucide-react';
 import { useConfig } from '../ConfigContext';
+import { db } from '../firebase';
+import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
 
 export const AdminPanel = () => {
   const { config, updateConfig } = useConfig();
   const [isAuthenticated, setIsAuthenticated] = useState(() => localStorage.getItem('adminAuth') === 'true');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [dbLocksmiths, setDbLocksmiths] = useState<any[]>([]);
 
   // Local state for forms
   const [yt1, setYt1] = useState(config.youtubeLinks[0] || '');
@@ -18,6 +21,23 @@ export const AdminPanel = () => {
   const [mensual, setMensual] = useState(config.prices.mensual.toString());
   const [products, setProducts] = useState(config.products || []);
   const [savedMessage, setSavedMessage] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchLocksmiths();
+    }
+  }, [isAuthenticated]);
+
+  const fetchLocksmiths = async () => {
+    try {
+      const q = query(collection(db, 'usuarios'), where('role', '==', 'Cerrajero'));
+      const querySnapshot = await getDocs(q);
+      const locksmiths = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      setDbLocksmiths(locksmiths);
+    } catch (err) {
+      console.error("Error fetching locksmiths", err);
+    }
+  };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,14 +73,16 @@ export const AdminPanel = () => {
     return Math.max(0, 90 - diffDays);
   };
 
-  const toggleLocksmithStatus = (id: string) => {
-    const updatedLocksmiths = config.locksmiths.map(l => {
-      if (l.id === id) {
-        return { ...l, isPaidActive: !l.isPaidActive };
-      }
-      return l;
-    });
-    updateConfig({ ...config, locksmiths: updatedLocksmiths });
+  const toggleLocksmithStatus = async (id: string, currentStatus: boolean) => {
+    try {
+      await updateDoc(doc(db, 'usuarios', id), {
+        suscripcionActiva: !currentStatus
+      });
+      // update local state to reflect change without re-fetching
+      setDbLocksmiths(prev => prev.map(l => l.id === id ? { ...l, suscripcionActiva: !currentStatus } : l));
+    } catch (err) {
+      console.error("Error updating status", err);
+    }
   };
 
   if (!isAuthenticated) {
@@ -294,17 +316,22 @@ export const AdminPanel = () => {
 
         {/* Cerrajeros Registrados */}
         <div className="space-y-4">
-          <h3 className="text-sm font-medium text-[#D4AF37] uppercase tracking-wider">Cerrajeros Registrados ({config.locksmiths?.length || 0})</h3>
+          <div className="flex justify-between items-center">
+            <h3 className="text-sm font-medium text-[#D4AF37] uppercase tracking-wider">Cerrajeros Registrados ({dbLocksmiths.length})</h3>
+            <button onClick={fetchLocksmiths} className="text-[10px] text-zinc-400 hover:text-white uppercase tracking-wider border border-zinc-800 px-2 py-1 rounded">Actualizar</button>
+          </div>
           <div className="space-y-3">
-            {config.locksmiths?.map(locksmith => {
-              const freeDays = calculateFreeDays(locksmith.registrationDate);
-              const isActive = locksmith.isPaidActive || freeDays > 0;
+            {dbLocksmiths.map(locksmith => {
+              const freeDays = locksmith.registrationDate ? calculateFreeDays(locksmith.registrationDate) : 0;
+              const isPaid = locksmith.suscripcionActiva;
+              const isActive = isPaid || freeDays > 0;
               return (
                 <div key={locksmith.id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col gap-2">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h4 className="text-zinc-100 font-bold text-sm">{locksmith.name}</h4>
-                      <p className="text-zinc-500 text-xs">{locksmith.phone} • {locksmith.zone}</p>
+                      <h4 className="text-zinc-100 font-bold text-sm">{locksmith.name || 'Sin nombre'}</h4>
+                      <p className="text-zinc-500 text-xs">{locksmith.phone || '-'} • {locksmith.country || 'Sin país'} - {locksmith.city || ''}</p>
+                      <p className="text-zinc-600 text-xs">{locksmith.email}</p>
                     </div>
                     <div className="text-right">
                       <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider ${isActive ? 'bg-[#D4AF37]/20 text-[#D4AF37]' : 'bg-red-500/20 text-red-400'}`}>
@@ -314,24 +341,23 @@ export const AdminPanel = () => {
                   </div>
                   <div className="flex items-center gap-2 mt-2 pt-2 border-t border-zinc-800 text-xs text-zinc-400">
                     <Clock className="w-3 h-3" />
-                    <span>Registro: {new Date(locksmith.registrationDate).toLocaleDateString()}</span>
+                    <span>Registro: {locksmith.registrationDate ? new Date(locksmith.registrationDate).toLocaleDateString() : '-'}</span>
                     <span>•</span>
                     <span className={freeDays > 0 ? 'text-[#D4AF37]' : 'text-red-400'}>{freeDays} días gratis</span>
                   </div>
-                  <div className="flex justify-between items-center mt-2">
-                    <span className="text-xs text-zinc-500">Plan: {locksmith.selectedPlan ? locksmith.selectedPlan.toUpperCase() : 'Ninguno'}</span>
+                  <div className="flex justify-end items-center mt-2">
                     <button 
-                      onClick={() => toggleLocksmithStatus(locksmith.id)}
-                      className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${locksmith.isPaidActive ? 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700' : 'bg-[#D4AF37] text-black hover:opacity-90'}`}
+                      onClick={() => toggleLocksmithStatus(locksmith.id, isPaid)}
+                      className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${isPaid ? 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700' : 'bg-[#D4AF37] text-black hover:opacity-90'}`}
                     >
                       <CheckCircle className="w-4 h-4" />
-                      {locksmith.isPaidActive ? 'Marcar como Impago' : 'Marcar como Pagado'}
+                      {isPaid ? 'Revocar Suscripción' : 'Activar Suscripción'}
                     </button>
                   </div>
                 </div>
               );
             })}
-            {(!config.locksmiths || config.locksmiths.length === 0) && (
+            {dbLocksmiths.length === 0 && (
               <p className="text-zinc-500 text-sm py-4 text-center">No hay cerrajeros registrados aún.</p>
             )}
           </div>

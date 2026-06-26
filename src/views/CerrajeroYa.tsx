@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, Star, Navigation, UserCircle, Loader2, MessageCircle } from 'lucide-react';
-import { useConfig } from '../ConfigContext';
 import { ViewType, Solicitud } from '../types';
 import { useAuth } from '../AuthContext';
 import { db } from '../firebase';
-import { collection, addDoc, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, query, where, onSnapshot, getDocs } from 'firebase/firestore';
 
 export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) => {
-  const { config } = useConfig();
   const { user, userData, role } = useAuth();
   const [solicitud, setSolicitud] = useState<Solicitud | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [activeLocksmiths, setActiveLocksmiths] = useState<any[]>([]);
 
   // Listen to active request
   useEffect(() => {
@@ -34,6 +33,54 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
 
     return () => unsubscribe();
   }, [user, role]);
+
+  // Fetch nearby locksmiths based on country and city
+  useEffect(() => {
+    if (!user || !userData?.country) return;
+
+    const fetchLocksmiths = async () => {
+      try {
+        let q = query(
+          collection(db, 'usuarios'),
+          where('role', '==', 'Cerrajero'),
+          where('country', '==', userData.country)
+        );
+
+        const querySnapshot = await getDocs(q);
+        let locksmiths = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
+        
+        // Filter by city if available, otherwise just keep country filter
+        if (userData.city) {
+          const sameCity = locksmiths.filter(l => l.city?.toLowerCase() === userData.city?.toLowerCase());
+          if (sameCity.length > 0) {
+            locksmiths = sameCity;
+          }
+        }
+        
+        // Filter only active subscriptions (or free days)
+        const active = locksmiths.filter(l => {
+          if (l.suscripcionActiva) return true;
+          const start = new Date(l.registrationDate || new Date().toISOString()).getTime();
+          const now = new Date().getTime();
+          const diffDays = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+          return Math.max(0, 90 - diffDays) > 0;
+        });
+
+        // Mock distance
+        const withDistance = active.map(l => ({
+          ...l,
+          distance: (Math.random() * 5 + 1).toFixed(1) + ' km',
+          rating: 5.0
+        })).sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
+        
+        setActiveLocksmiths(withDistance);
+      } catch (error) {
+        console.error("Error fetching locksmiths:", error);
+      }
+    };
+    
+    fetchLocksmiths();
+  }, [user, userData]);
 
   const handleSolicitar = async () => {
     if (!user) {
@@ -67,15 +114,6 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
     }
   };
 
-  const calculateFreeDays = (registrationDate: string) => {
-    const start = new Date(registrationDate).getTime();
-    const now = new Date().getTime();
-    const diffDays = Math.floor((now - start) / (1000 * 60 * 60 * 24));
-    return Math.max(0, 90 - diffDays);
-  };
-
-  const activeLocksmiths = config.locksmiths.filter(l => l.isPaidActive || calculateFreeDays(l.registrationDate) > 0);
-
   return (
     <div className="flex flex-col pb-8">
       {/* Map Simulation */}
@@ -107,7 +145,7 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
             <div>
               <h3 className="text-zinc-400 text-sm font-medium mb-3 uppercase tracking-wider">Cerrajeros Cercanos ({activeLocksmiths.length})</h3>
               {activeLocksmiths.length === 0 ? (
-                <p className="text-zinc-500 text-sm text-center py-4 bg-zinc-900 border border-zinc-800 rounded-xl">No hay cerrajeros disponibles en este momento.</p>
+                <p className="text-zinc-500 text-sm text-center py-4 bg-zinc-900 border border-zinc-800 rounded-xl">No hay cerrajeros disponibles en tu zona por el momento.</p>
               ) : (
                 <div className="space-y-3">
                   {activeLocksmiths.map(locksmith => (

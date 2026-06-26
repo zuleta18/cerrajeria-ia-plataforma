@@ -3,13 +3,20 @@ import { ViewType } from '../types';
 import { auth, db } from '../firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
-import { Key, User, Mail, Lock, Phone, MapPin } from 'lucide-react';
+import { Key, User, Mail, Lock, Phone, MapPin, Globe } from 'lucide-react';
+
+const COUNTRIES = [
+  'Colombia', 'México', 'España', 'Argentina', 'Chile', 
+  'Perú', 'Ecuador', 'Venezuela', 'Otros'
+];
 
 export const Registro = ({ navigate }: { navigate: (v: ViewType) => void }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [country, setCountry] = useState('Colombia');
+  const [city, setCity] = useState('');
   const [zone, setZone] = useState('');
   const [role, setRole] = useState<'Cliente' | 'Cerrajero'>('Cliente');
   const [error, setError] = useState('');
@@ -23,10 +30,13 @@ export const Registro = ({ navigate }: { navigate: (v: ViewType) => void }) => {
       await setDoc(doc(db, 'usuarios', user.uid), {
         name,
         phone,
-        zone,
+        country,
+        city,
+        zone: role === 'Cerrajero' ? zone : '',
         role,
         email,
         registrationDate: new Date().toISOString(),
+        suscripcionActiva: false
       });
       
       navigate(role === 'Cerrajero' ? 'PortalCerrajero' : 'Inicio');
@@ -81,12 +91,32 @@ export const Registro = ({ navigate }: { navigate: (v: ViewType) => void }) => {
             <input required type="tel" value={phone} onChange={e => setPhone(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-10 pr-4 py-3 text-white focus:border-[#D4AF37] outline-none" placeholder="Ej. 3001234567" />
           </div>
         </div>
-        {role === 'Cerrajero' && (
+        
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-xs text-zinc-500 mb-1 block">Ciudad / Zona de Trabajo</label>
+            <label className="text-xs text-zinc-500 mb-1 block">País</label>
+            <div className="relative">
+              <Globe className="w-5 h-5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
+              <select required value={country} onChange={e => setCountry(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-10 pr-4 py-3 text-white focus:border-[#D4AF37] outline-none appearance-none">
+                {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="text-xs text-zinc-500 mb-1 block">Ciudad</label>
             <div className="relative">
               <MapPin className="w-5 h-5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input required type="text" value={zone} onChange={e => setZone(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-10 pr-4 py-3 text-white focus:border-[#D4AF37] outline-none" placeholder="Ej. Bogotá - Norte" />
+              <input required type="text" value={city} onChange={e => setCity(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-10 pr-4 py-3 text-white focus:border-[#D4AF37] outline-none" placeholder="Ej. Bogotá" />
+            </div>
+          </div>
+        </div>
+
+        {role === 'Cerrajero' && (
+          <div>
+            <label className="text-xs text-zinc-500 mb-1 block">Zona de Trabajo (opcional)</label>
+            <div className="relative">
+              <MapPin className="w-5 h-5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input type="text" value={zone} onChange={e => setZone(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-10 pr-4 py-3 text-white focus:border-[#D4AF37] outline-none" placeholder="Ej. Norte" />
             </div>
           </div>
         )}
