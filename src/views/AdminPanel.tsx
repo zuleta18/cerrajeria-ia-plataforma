@@ -41,7 +41,7 @@ export const AdminPanel = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === 'edinson-18972063') { // Simple hardcoded password as requested "solo para mi"
+    if (password === 'zuleta3015186337') { // Simple hardcoded password as requested "solo para mi"
       localStorage.setItem('adminAuth', 'true');
       setIsAuthenticated(true);
       setError('');
