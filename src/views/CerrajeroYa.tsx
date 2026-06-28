@@ -83,20 +83,42 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
           }
         }
         
-        // Filter only active subscriptions (or free days)
+        // Filter only active subscriptions (or free days) and valid coordinates
         const active = locksmiths.filter(l => {
           const isPaid = l.suscripcionActiva;
           const hasFreeDays = calculateFreeDays(l.registrationDate) > 0;
-          return isPaid || hasFreeDays;
+          const isActive = isPaid || hasFreeDays;
+          
+          // Require lat/lng for distance calculation
+          const hasLocation = l.lat !== undefined && l.lng !== undefined && l.lat !== 0 && l.lng !== 0;
+          
+          return isActive && hasLocation;
         });
-        console.log(`Cerrajeros activos después del filtro (suscripción o gratis):`, active.length);
+        console.log(`Cerrajeros activos después del filtro (suscripción o gratis y ubicación):`, active.length);
 
-        // Mock distance (in a real app this would use lat/lng from user and locksmith)
+        // Helper for Haversine distance
+        const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+          if (!lat1 || !lon1 || !lat2 || !lon2) return 999;
+          const R = 6371; // km
+          const dLat = (lat2 - lat1) * Math.PI / 180;
+          const dLon = (lon2 - lon1) * Math.PI / 180;
+          const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                    Math.sin(dLon/2) * Math.sin(dLon/2);
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+          return R * c;
+        };
+
+        const userLat = userData.lat || 4.6097; // fallback to Bogota
+        const userLng = userData.lng || -74.0817;
+
+        // Calculate real distance
         const withDistance = active.map(l => ({
           ...l,
-          distance: (Math.random() * 5 + 1).toFixed(1) + ' km',
+          distanceNum: calculateDistance(userLat, userLng, l.lat, l.lng),
+          distance: calculateDistance(userLat, userLng, l.lat, l.lng).toFixed(1) + ' km',
           rating: 5.0
-        })).sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
+        })).sort((a, b) => a.distanceNum - b.distanceNum);
         
         setActiveLocksmiths(withDistance);
       } catch (error) {
@@ -126,7 +148,7 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
         clienteId: user.uid,
         clienteNombre: userData?.name || 'Cliente',
         clienteTelefono: userData?.phone || '',
-        ubicacion: { lat: 4.6097, lng: -74.0817 }, // Mock location
+        ubicacion: { lat: userData?.lat || 4.6097, lng: userData?.lng || -74.0817 }, // Fallback to mock if undefined
         tipoServicio: 'Asistencia general de cerrajería',
         estado: 'pendiente',
         cerrajeroAsignadoId: '',
@@ -134,6 +156,7 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
       });
       sessionRequestIds.current.add(docRef.id);
     } catch (err: any) {
+      console.error("Error completo al solicitar cerrajero:", err);
       setError(err.message || 'Error al solicitar cerrajero');
     } finally {
       setLoading(false);
