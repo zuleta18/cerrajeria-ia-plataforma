@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ViewType } from '../types';
 import { auth, db } from '../firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Key, User, Mail, Lock, Phone, MapPin, Globe } from 'lucide-react';
 
 const COUNTRIES = [
@@ -23,34 +23,45 @@ export const Registro = ({ navigate }: { navigate: (v: ViewType) => void }) => {
 
   const [success, setSuccess] = useState('');
 
+  const [loading, setLoading] = useState(false);
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     setError('');
     setSuccess('');
+    setLoading(true);
+    
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       
-      await setDoc(doc(db, 'usuarios', user.uid), {
-        name,
-        phone,
-        country,
-        city,
-        zone: role === 'Cerrajero' ? zone : '',
-        role,
-        email,
-        lat: 0,
-        lng: 0,
-        registrationDate: new Date().toISOString(),
-        suscripcionActiva: false
-      });
-      
-      setSuccess('Registro exitoso. Iniciando sesión...');
-      setTimeout(() => {
-        navigate(role === 'Cerrajero' ? 'PortalCerrajero' : 'Inicio');
-      }, 1500);
+      try {
+        await setDoc(doc(db, 'usuarios', user.uid), {
+          name,
+          phone,
+          country,
+          city,
+          zone: role === 'Cerrajero' ? zone : '',
+          role,
+          email,
+          lat: 0,
+          lng: 0,
+          registrationDate: serverTimestamp(),
+          suscripcionActiva: false
+        });
+        
+        setSuccess('Registro exitoso. Iniciando sesión...');
+        setTimeout(() => {
+          navigate(role === 'Cerrajero' ? 'PortalCerrajero' : 'Inicio');
+        }, 1500);
+      } catch (firestoreErr: any) {
+        console.error('Error saving to Firestore:', firestoreErr);
+        setError(`Error al guardar datos: ${firestoreErr.message || 'Intenta de nuevo'}`);
+        setLoading(false);
+      }
     } catch (err: any) {
-      console.error(err);
+      console.error('Error in Authentication:', err);
       if (err.code === 'auth/email-already-in-use') {
         setError('El correo electrónico ya está registrado.');
       } else if (err.code === 'auth/weak-password') {
@@ -62,6 +73,7 @@ export const Registro = ({ navigate }: { navigate: (v: ViewType) => void }) => {
       } else {
         setError('Ocurrió un error al registrarse. Intenta nuevamente.');
       }
+      setLoading(false);
     }
   };
 
@@ -149,8 +161,8 @@ export const Registro = ({ navigate }: { navigate: (v: ViewType) => void }) => {
           </div>
         </div>
         
-        <button type="submit" className="w-full mt-4 bg-gradient-to-r from-[#D4AF37] to-[#8A6D3B] hover:opacity-90 text-black font-bold py-4 rounded-xl transition-all active:scale-95">
-          Registrarme
+        <button type="submit" disabled={loading} className="w-full mt-4 bg-gradient-to-r from-[#D4AF37] to-[#8A6D3B] hover:opacity-90 text-black font-bold py-4 rounded-xl transition-all active:scale-95 disabled:opacity-50">
+          {loading ? 'Registrando...' : 'Registrarme'}
         </button>
       </form>
 
