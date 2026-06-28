@@ -66,7 +66,7 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
       try {
         let q = query(
           collection(db, 'usuarios'),
-          where('role', '==', 'Cerrajero'),
+          where('rol', '==', 'cerrajero'),
           where('country', '==', userData.country)
         );
 

@@ -30,7 +30,7 @@ export const AdminPanel = () => {
 
   const fetchLocksmiths = async () => {
     try {
-      const q = query(collection(db, 'usuarios'), where('role', '==', 'Cerrajero'));
+      const q = query(collection(db, 'usuarios'), where('rol', '==', 'cerrajero'));
       const querySnapshot = await getDocs(q);
       const locksmiths = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
       setDbLocksmiths(locksmiths);

@@ -28,7 +28,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           const userDoc = await getDoc(doc(db, 'usuarios', currentUser.uid));
           if (userDoc.exists()) {
             const data = userDoc.data();
-            setRole(data.role as 'Cliente' | 'Cerrajero');
+            // Handle both legacy 'role' and new 'rol' field
+            let userRole = data.rol 
+              ? (data.rol === 'cerrajero' ? 'Cerrajero' : 'Cliente') 
+              : data.role;
+            setRole(userRole as 'Cliente' | 'Cerrajero');
             setUserData(data);
           } else {
             setRole(null);

@@ -43,7 +43,7 @@ export const Registro = ({ navigate }: { navigate: (v: ViewType) => void }) => {
           country,
           city,
           zone: role === 'Cerrajero' ? zone : '',
-          role,
+          rol: role.toLowerCase(),
           email,
           lat: 0,
           lng: 0,
