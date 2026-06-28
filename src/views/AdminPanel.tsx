@@ -3,6 +3,7 @@ import { Settings, Lock, Save, LogOut, CheckCircle, Clock, Trash2, Plus } from '
 import { useConfig } from '../ConfigContext';
 import { db } from '../firebase';
 import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { calculateFreeDays, formatDate } from '../utils/date';
 
 export const AdminPanel = () => {
   const { config, updateConfig } = useConfig();
@@ -64,13 +65,6 @@ export const AdminPanel = () => {
     });
     setSavedMessage(true);
     setTimeout(() => setSavedMessage(false), 3000);
-  };
-
-  const calculateFreeDays = (registrationDate: string) => {
-    const start = new Date(registrationDate).getTime();
-    const now = new Date().getTime();
-    const diffDays = Math.floor((now - start) / (1000 * 60 * 60 * 24));
-    return Math.max(0, 90 - diffDays);
   };
 
   const toggleLocksmithStatus = async (id: string, currentStatus: boolean) => {
@@ -341,7 +335,7 @@ export const AdminPanel = () => {
                   </div>
                   <div className="flex items-center gap-2 mt-2 pt-2 border-t border-zinc-800 text-xs text-zinc-400">
                     <Clock className="w-3 h-3" />
-                    <span>Registro: {locksmith.registrationDate ? new Date(locksmith.registrationDate).toLocaleDateString() : '-'}</span>
+                    <span>Registro: {formatDate(locksmith.registrationDate)}</span>
                     <span>•</span>
                     <span className={freeDays > 0 ? 'text-[#D4AF37]' : 'text-red-400'}>{freeDays} días gratis</span>
                   </div>

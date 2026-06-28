@@ -6,6 +6,7 @@ import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/f
 import { Key, MapPin, User, CheckCircle, Navigation, MessageCircle, LogOut, CreditCard } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { PayPalButton } from '../components/PayPalButton';
+import { calculateFreeDays } from '../utils/date';
 
 export const PortalCerrajero = ({ navigate }: { navigate: (v: ViewType) => void }) => {
   const { user, role, userData } = useAuth();
@@ -84,13 +85,6 @@ export const PortalCerrajero = ({ navigate }: { navigate: (v: ViewType) => void 
   const handleLogout = async () => {
     await signOut(auth);
     navigate('Inicio');
-  };
-
-  const calculateFreeDays = (registrationDate: string) => {
-    const start = new Date(registrationDate).getTime();
-    const now = new Date().getTime();
-    const diffDays = Math.floor((now - start) / (1000 * 60 * 60 * 24));
-    return Math.max(0, 90 - diffDays);
   };
 
   if (!user || role !== 'Cerrajero') return null;

@@ -4,6 +4,7 @@ import { ViewType, Solicitud } from '../types';
 import { useAuth } from '../AuthContext';
 import { db } from '../firebase';
 import { collection, addDoc, query, where, onSnapshot, getDocs, updateDoc, doc } from 'firebase/firestore';
+import { calculateFreeDays } from '../utils/date';
 
 export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) => {
   const { user, userData, role } = useAuth();
@@ -84,10 +85,7 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
         // Filter only active subscriptions (or free days)
         const active = locksmiths.filter(l => {
           if (l.suscripcionActiva) return true;
-          const start = new Date(l.registrationDate || new Date().toISOString()).getTime();
-          const now = new Date().getTime();
-          const diffDays = Math.floor((now - start) / (1000 * 60 * 60 * 24));
-          return Math.max(0, 90 - diffDays) > 0;
+          return calculateFreeDays(l.registrationDate) > 0;
         });
 
         // Mock distance
