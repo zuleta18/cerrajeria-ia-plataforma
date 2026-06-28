@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { MapPin, Star, Navigation, UserCircle, Loader2, MessageCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { MapPin, Star, Navigation, UserCircle, Loader2, MessageCircle, XCircle } from 'lucide-react';
 import { ViewType, Solicitud } from '../types';
 import { useAuth } from '../AuthContext';
 import { db } from '../firebase';
-import { collection, addDoc, query, where, onSnapshot, getDocs } from 'firebase/firestore';
+import { collection, addDoc, query, where, onSnapshot, getDocs, updateDoc, doc } from 'firebase/firestore';
 
 export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) => {
   const { user, userData, role } = useAuth();
@@ -11,6 +11,8 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [activeLocksmiths, setActiveLocksmiths] = useState<any[]>([]);
+  const [searchTimeout, setSearchTimeout] = useState(false);
+  const sessionRequestIds = useRef<Set<string>>(new Set());
 
   // Listen to active request
   useEffect(() => {
@@ -24,8 +26,17 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       if (!snapshot.empty) {
-        const docData = snapshot.docs[0].data() as Solicitud;
-        setSolicitud({ ...docData, id: snapshot.docs[0].id });
+        const acceptedDoc = snapshot.docs.find(d => d.data().estado === 'aceptado');
+        if (acceptedDoc) {
+          setSolicitud({ ...acceptedDoc.data(), id: acceptedDoc.id } as Solicitud);
+        } else {
+          const pendingSessionDoc = snapshot.docs.find(d => d.data().estado === 'pendiente' && sessionRequestIds.current.has(d.id));
+          if (pendingSessionDoc) {
+            setSolicitud({ ...pendingSessionDoc.data(), id: pendingSessionDoc.id } as Solicitud);
+          } else {
+            setSolicitud(null);
+          }
+        }
       } else {
         setSolicitud(null);
       }
@@ -33,6 +44,19 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
 
     return () => unsubscribe();
   }, [user, role]);
+
+  useEffect(() => {
+    let timer: any;
+    if (solicitud && solicitud.estado === 'pendiente') {
+      setSearchTimeout(false);
+      timer = setTimeout(() => {
+        setSearchTimeout(true);
+      }, 10000);
+    } else {
+      setSearchTimeout(false);
+    }
+    return () => clearTimeout(timer);
+  }, [solicitud]);
 
   // Fetch nearby locksmiths based on country and city
   useEffect(() => {
@@ -97,7 +121,7 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
     setError('');
     
     try {
-      await addDoc(collection(db, 'solicitudes'), {
+      const docRef = await addDoc(collection(db, 'solicitudes'), {
         clienteId: user.uid,
         clienteNombre: userData?.name || 'Cliente',
         clienteTelefono: userData?.phone || '',
@@ -107,10 +131,23 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
         cerrajeroAsignadoId: '',
         timestamp: new Date().toISOString()
       });
+      sessionRequestIds.current.add(docRef.id);
     } catch (err: any) {
       setError(err.message || 'Error al solicitar cerrajero');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCancelar = async () => {
+    if (solicitud) {
+      try {
+        await updateDoc(doc(db, 'solicitudes', solicitud.id), { estado: 'cancelado' });
+        setSolicitud(null);
+        setSearchTimeout(false);
+      } catch (err) {
+        console.error("Error al cancelar", err);
+      }
     }
   };
 
@@ -180,9 +217,43 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
 
         {solicitud && solicitud.estado === 'pendiente' && (
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 flex flex-col items-center text-center">
-            <Loader2 className="w-12 h-12 text-[#D4AF37] animate-spin mb-4" />
-            <h3 className="text-xl font-bold text-white mb-2">Buscando cerrajero...</h3>
-            <p className="text-zinc-400 text-sm">Estamos notificando a los cerrajeros más cercanos a tu ubicación.</p>
+            {searchTimeout ? (
+              <>
+                <XCircle className="w-12 h-12 text-zinc-500 mb-4" />
+                <h3 className="text-xl font-bold text-white mb-2">Sin respuesta</h3>
+                <p className="text-zinc-400 text-sm mb-6">No hay cerrajeros disponibles en tu zona por el momento.</p>
+                <div className="flex gap-3 w-full">
+                  <button 
+                    onClick={handleCancelar}
+                    className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-3 rounded-xl transition-all border border-zinc-700"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    onClick={async () => {
+                      await handleCancelar();
+                      handleSolicitar();
+                    }}
+                    className="flex-1 bg-[#D4AF37] hover:bg-[#b5952f] text-black font-bold py-3 rounded-xl transition-all"
+                  >
+                    Reintentar
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <Loader2 className="w-12 h-12 text-[#D4AF37] animate-spin mb-4" />
+                <h3 className="text-xl font-bold text-white mb-2">Buscando cerrajero...</h3>
+                <p className="text-zinc-400 text-sm mb-6">Estamos notificando a los cerrajeros más cercanos a tu ubicación.</p>
+                <button 
+                  onClick={handleCancelar}
+                  className="w-full bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-3 rounded-xl transition-all border border-zinc-700 flex items-center justify-center gap-2"
+                >
+                  <XCircle className="w-5 h-5" />
+                  Cancelar búsqueda
+                </button>
+              </>
+            )}
           </div>
         )}
 
