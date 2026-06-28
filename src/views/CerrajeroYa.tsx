@@ -73,7 +73,8 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
 
         const querySnapshot = await getDocs(q);
         let locksmiths = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
-        
+        console.log(`Documentos devueltos de Firestore (cerrajeros en país ${userData.country}):`, locksmiths.length);
+
         // Filter by city if available, otherwise just keep country filter
         if (userData.city) {
           const sameCity = locksmiths.filter(l => l.city?.toLowerCase() === userData.city?.toLowerCase());
@@ -84,11 +85,13 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
         
         // Filter only active subscriptions (or free days)
         const active = locksmiths.filter(l => {
-          if (l.suscripcionActiva) return true;
-          return calculateFreeDays(l.registrationDate) > 0;
+          const isPaid = l.suscripcionActiva;
+          const hasFreeDays = calculateFreeDays(l.registrationDate) > 0;
+          return isPaid || hasFreeDays;
         });
+        console.log(`Cerrajeros activos después del filtro (suscripción o gratis):`, active.length);
 
-        // Mock distance
+        // Mock distance (in a real app this would use lat/lng from user and locksmith)
         const withDistance = active.map(l => ({
           ...l,
           distance: (Math.random() * 5 + 1).toFixed(1) + ' km',

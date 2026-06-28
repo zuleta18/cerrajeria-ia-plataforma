@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { ViewType } from '../types';
-import { auth } from '../firebase';
+import { auth, db } from '../firebase';
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Key, User, Mail, Lock } from 'lucide-react';
 
 export const Login = ({ navigate }: { navigate: (v: ViewType) => void }) => {
@@ -18,7 +19,34 @@ export const Login = ({ navigate }: { navigate: (v: ViewType) => void }) => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      // Auto-repair logic
+      const userDocRef = doc(db, 'usuarios', user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+      
+      if (!userDocSnap.exists()) {
+        console.log("Cuenta huérfana detectada, creando documento en Firestore...");
+        try {
+          await setDoc(userDocRef, {
+            name: '',
+            phone: '',
+            country: '',
+            city: '',
+            zone: '',
+            rol: 'cliente', // Por defecto
+            email: user.email || email,
+            lat: 0,
+            lng: 0,
+            registrationDate: serverTimestamp(),
+            suscripcionActiva: false
+          });
+        } catch (firestoreErr: any) {
+          console.error("Error reparando cuenta huérfana:", firestoreErr);
+        }
+      }
+
       navigate('Inicio');
     } catch (err: any) {
       setError(err.message || 'Error al iniciar sesión');
