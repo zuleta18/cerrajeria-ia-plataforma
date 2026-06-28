@@ -21,8 +21,12 @@ export const Registro = ({ navigate }: { navigate: (v: ViewType) => void }) => {
   const [role, setRole] = useState<'Cliente' | 'Cerrajero'>('Cliente');
   const [error, setError] = useState('');
 
+  const [success, setSuccess] = useState('');
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+    setSuccess('');
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
@@ -35,13 +39,29 @@ export const Registro = ({ navigate }: { navigate: (v: ViewType) => void }) => {
         zone: role === 'Cerrajero' ? zone : '',
         role,
         email,
+        lat: 0,
+        lng: 0,
         registrationDate: new Date().toISOString(),
         suscripcionActiva: false
       });
       
-      navigate(role === 'Cerrajero' ? 'PortalCerrajero' : 'Inicio');
+      setSuccess('Registro exitoso. Iniciando sesión...');
+      setTimeout(() => {
+        navigate(role === 'Cerrajero' ? 'PortalCerrajero' : 'Inicio');
+      }, 1500);
     } catch (err: any) {
-      setError(err.message || 'Error al registrarse');
+      console.error(err);
+      if (err.code === 'auth/email-already-in-use') {
+        setError('El correo electrónico ya está registrado.');
+      } else if (err.code === 'auth/weak-password') {
+        setError('La contraseña debe tener al menos 6 caracteres.');
+      } else if (err.code === 'auth/invalid-email') {
+        setError('El correo electrónico no es válido.');
+      } else if (err.code === 'auth/network-request-failed') {
+        setError('Error de conexión. Verifica tu internet.');
+      } else {
+        setError('Ocurrió un error al registrarse. Intenta nuevamente.');
+      }
     }
   };
 
@@ -68,6 +88,7 @@ export const Registro = ({ navigate }: { navigate: (v: ViewType) => void }) => {
       </div>
 
       {error && <div className="w-full bg-red-500/10 text-red-400 border border-red-500/20 p-3 rounded-lg text-sm mb-4">{error}</div>}
+      {success && <div className="w-full bg-green-500/10 text-green-400 border border-green-500/20 p-3 rounded-lg text-sm mb-4">{success}</div>}
 
       <form onSubmit={handleRegister} className="w-full space-y-4">
         <div>

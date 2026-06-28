@@ -143,10 +143,12 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
     if (solicitud) {
       try {
         await updateDoc(doc(db, 'solicitudes', solicitud.id), { estado: 'cancelado' });
+      } catch (err) {
+        console.error("Error al cancelar en base de datos", err);
+      } finally {
         setSolicitud(null);
         setSearchTimeout(false);
-      } catch (err) {
-        console.error("Error al cancelar", err);
+        sessionRequestIds.current.delete(solicitud.id);
       }
     }
   };
