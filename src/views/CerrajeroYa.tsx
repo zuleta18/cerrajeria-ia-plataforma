@@ -165,14 +165,16 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
 
   const handleCancelar = async () => {
     if (solicitud) {
+      const currentId = solicitud.id;
+      // Optimistic update to clear UI immediately and avoid getting stuck
+      setSolicitud(null);
+      setSearchTimeout(false);
+      sessionRequestIds.current.delete(currentId);
+      
       try {
-        await updateDoc(doc(db, 'solicitudes', solicitud.id), { estado: 'cancelado' });
+        await updateDoc(doc(db, 'solicitudes', currentId), { estado: 'cancelado' });
       } catch (err) {
         console.error("Error al cancelar en base de datos", err);
-      } finally {
-        setSolicitud(null);
-        setSearchTimeout(false);
-        sessionRequestIds.current.delete(solicitud.id);
       }
     }
   };

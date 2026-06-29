@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Home, BookOpen, MapPin, ShoppingCart, Play, Book, Settings, Key } from 'lucide-react';
+import { Home, BookOpen, MapPin, ShoppingCart, Play, Book, Settings, Key, LogOut } from 'lucide-react';
 import { ViewType } from './types';
 import { ConfigProvider } from './ConfigContext';
 import { BannerAd } from './components/BannerAds';
 import { DisclaimerModal } from './components/DisclaimerModal';
-import { AuthProvider } from './AuthContext';
+import { AuthProvider, useAuth } from './AuthContext';
 import { ErrorBoundary } from './ErrorBoundary';
+import { auth } from './firebase';
+import { signOut } from 'firebase/auth';
 
 // Views
 import { Inicio } from './views/Inicio';
@@ -25,6 +27,16 @@ import { PortalCerrajero } from './views/PortalCerrajero';
 
 function AppContent() {
   const [currentView, setCurrentView] = useState<ViewType>('Inicio');
+  const { user, userData, role } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setCurrentView('Inicio');
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
 
   const renderView = () => {
     switch (currentView) {
@@ -62,17 +74,38 @@ function AppContent() {
         {/* Header */}
         <header className="flex items-center justify-between px-6 py-4 bg-[#0a0a0a] border-b border-[#D4AF37]/30 shrink-0">
           <div className="flex items-center gap-2" onClick={() => setCurrentView('Inicio')} style={{ cursor: 'pointer' }}>
-            <div className="w-8 h-8 bg-gradient-to-br from-[#D4AF37] to-[#8A6D3B] rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-gradient-to-br from-[#D4AF37] to-[#8A6D3B] rounded-lg flex items-center justify-center shrink-0">
               <Key className="w-5 h-5 text-black" />
             </div>
-            <h1 className="text-xl font-serif italic text-[#D4AF37] tracking-tight">CerrajeríaIA</h1>
+            <h1 className="text-xl font-serif italic text-[#D4AF37] tracking-tight hidden sm:block">CerrajeríaIA</h1>
           </div>
-          <button 
-            onClick={() => setCurrentView('AdminPanel')}
-            className="px-3 py-1.5 text-[10px] border border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-black transition-colors rounded uppercase font-bold"
-          >
-            Admin
-          </button>
+          <div className="flex items-center gap-3">
+            {user && (
+              <div className="flex flex-col items-end mr-2 text-right">
+                <span className="text-[10px] sm:text-xs text-zinc-300">
+                  Conectado como: <span className="font-bold text-white">{userData?.name || user.email?.split('@')[0] || 'Usuario'}</span>
+                </span>
+                <span className="text-[9px] sm:text-[10px] text-[#D4AF37] uppercase tracking-wider">
+                  ({role || 'Usuario'})
+                </span>
+              </div>
+            )}
+            <button 
+              onClick={() => setCurrentView('AdminPanel')}
+              className="px-3 py-1.5 text-[10px] border border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-black transition-colors rounded uppercase font-bold shrink-0"
+            >
+              Admin
+            </button>
+            {user && (
+              <button 
+                onClick={handleLogout}
+                className="p-1.5 text-zinc-400 hover:text-red-400 hover:bg-red-400/10 transition-colors rounded shrink-0"
+                title="Cerrar sesión"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            )}
+          </div>
         </header>
 
         <div className="flex-1 overflow-y-auto pb-24 bg-[radial-gradient(circle_at_center,_#1a1a1a_0%,_#050505_100%)]">
