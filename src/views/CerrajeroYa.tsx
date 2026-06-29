@@ -323,6 +323,7 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
                     <p>Total en BD: {debugInfo.totalFound}</p>
                     <p>Buscando en: {debugInfo.userCountry || 'N/A'}, {debugInfo.userCity || 'N/A'}</p>
                     <p>Coords cliente: {debugInfo.userLat ? `${debugInfo.userLat.toFixed(4)}, ${debugInfo.userLng.toFixed(4)}` : 'No registradas'}</p>
+                    <p>Reparando ubicación: {isRepairingLocation ? 'Sí...' : 'No'}</p>
                     
                     <div className="mt-2 space-y-2">
                       {debugInfo.locksmiths.map((l: any, i: number) => (

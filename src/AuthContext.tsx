@@ -43,6 +43,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               hasPromptedLocation.current = true;
               setIsRepairingLocation(true);
               if ('geolocation' in navigator) {
+                console.log(`Intentando obtener ubicación para rol: ${userRole}`);
                 navigator.geolocation.getCurrentPosition(
                   async (position) => {
                     try {
@@ -84,6 +85,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           unsubscribeDoc();
           unsubscribeDoc = undefined;
         }
+        hasPromptedLocation.current = false;
         setRole(null);
         setUserData(null);
         setLoading(false);
