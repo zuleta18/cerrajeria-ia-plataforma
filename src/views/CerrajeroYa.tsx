@@ -7,12 +7,13 @@ import { collection, addDoc, query, where, onSnapshot, getDocs, updateDoc, doc }
 import { calculateFreeDays } from '../utils/date';
 
 export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) => {
-  const { user, userData, role } = useAuth();
+  const { user, userData, role, isRepairingLocation } = useAuth();
   const [solicitud, setSolicitud] = useState<Solicitud | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [activeLocksmiths, setActiveLocksmiths] = useState<any[]>([]);
   const [searchTimeout, setSearchTimeout] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
   const sessionRequestIds = useRef<Set<string>>(new Set());
 
   // Listen to active request
@@ -141,6 +142,43 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
         console.log(`Cerrajeros en un radio de 20km:`, withinRadius.length);
         
         setActiveLocksmiths(withinRadius);
+
+        // Build debug info
+        const debugData = {
+          totalFound: allLocksmiths.length,
+          userCountry: userData.country,
+          userCity: userData.city,
+          userLat: userData.lat,
+          userLng: userData.lng,
+          locksmiths: allLocksmiths.map(l => {
+            let reason = [];
+            if (userCountry && normalize(l.country) !== userCountry) reason.push('País distinto');
+            if (userCity && normalize(l.city) !== userCity) reason.push('Ciudad distinta');
+            
+            const isPaid = l.suscripcionActiva;
+            const hasFreeDays = calculateFreeDays(l.registrationDate) > 0;
+            if (!isPaid && !hasFreeDays) reason.push('Inactivo/Sin pago');
+            
+            if (l.lat === undefined || l.lng === undefined || l.lat === 0 || l.lng === 0) reason.push('Sin ubicación');
+            
+            let dist = 999;
+            if (l.lat && l.lng) {
+               dist = calculateDistance(userLat, userLng, l.lat, l.lng);
+               if (dist > 20) reason.push(`Lejos (${dist.toFixed(1)}km)`);
+            }
+            
+            return {
+              name: l.name || l.email || 'Sin nombre',
+              country: l.country,
+              city: l.city,
+              lat: l.lat,
+              lng: l.lng,
+              passed: reason.length === 0,
+              reason: reason.join(', ')
+            };
+          })
+        };
+        setDebugInfo(debugData);
       } catch (error) {
         console.error("Error fetching locksmiths:", error);
       }
@@ -228,11 +266,11 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
           <>
             <button 
               onClick={handleSolicitar}
-              disabled={loading}
+              disabled={loading || isRepairingLocation}
               className="w-full bg-gradient-to-r from-[#D4AF37] to-[#8A6D3B] hover:opacity-90 text-black font-bold py-4 rounded-xl shadow-none transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Navigation className="w-5 h-5" />}
-              <span>{loading ? 'Solicitando...' : 'Solicitar Cerrajero'}</span>
+              {(loading || isRepairingLocation) ? <Loader2 className="w-5 h-5 animate-spin" /> : <Navigation className="w-5 h-5" />}
+              <span>{isRepairingLocation ? 'Obteniendo tu ubicación...' : (loading ? 'Solicitando...' : 'Solicitar Cerrajero')}</span>
             </button>
 
             <div>
@@ -278,6 +316,25 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
                 <XCircle className="w-12 h-12 text-zinc-500 mb-4" />
                 <h3 className="text-xl font-bold text-white mb-2">Sin respuesta</h3>
                 <p className="text-zinc-400 text-sm mb-6">No hay cerrajeros disponibles en tu zona por el momento.</p>
+
+                {debugInfo && (
+                  <div className="w-full bg-zinc-950 p-4 rounded-lg border border-zinc-800 text-left text-[10px] text-zinc-500 mb-6 font-mono overflow-y-auto max-h-48 custom-scrollbar">
+                    <p className="font-bold text-zinc-400 mb-2 border-b border-zinc-800 pb-1">Diagnóstico (Solo Dev):</p>
+                    <p>Total en BD: {debugInfo.totalFound}</p>
+                    <p>Buscando en: {debugInfo.userCountry || 'N/A'}, {debugInfo.userCity || 'N/A'}</p>
+                    <p>Coords cliente: {debugInfo.userLat ? `${debugInfo.userLat.toFixed(4)}, ${debugInfo.userLng.toFixed(4)}` : 'No registradas'}</p>
+                    
+                    <div className="mt-2 space-y-2">
+                      {debugInfo.locksmiths.map((l: any, i: number) => (
+                        <div key={i} className="pl-2 border-l border-zinc-800">
+                          <p className="text-zinc-400">{l.name} <span className={l.passed ? 'text-green-500' : 'text-red-500'}>[{l.passed ? 'OK' : 'DESCARTADO'}]</span></p>
+                          <p>{l.country || 'N/A'}, {l.city || 'N/A'} | {l.lat ? `${l.lat.toFixed(4)}, ${l.lng.toFixed(4)}` : 'Sin lat/lng'}</p>
+                          {!l.passed && <p className="text-red-400/70">Motivo: {l.reason}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex gap-3 w-full">
                   <button 
