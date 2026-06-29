@@ -6,8 +6,9 @@ import { BannerAd } from './components/BannerAds';
 import { DisclaimerModal } from './components/DisclaimerModal';
 import { AuthProvider, useAuth } from './AuthContext';
 import { ErrorBoundary } from './ErrorBoundary';
-import { auth } from './firebase';
+import { auth, db } from './firebase';
 import { signOut } from 'firebase/auth';
+import { doc, updateDoc } from 'firebase/firestore';
 
 // Views
 import { Inicio } from './views/Inicio';
@@ -28,6 +29,36 @@ import { PortalCerrajero } from './views/PortalCerrajero';
 function AppContent() {
   const [currentView, setCurrentView] = useState<ViewType>('Inicio');
   const { user, userData, role } = useAuth();
+  
+  // Ref to prevent multiple location prompts during a single session load
+  const hasPromptedLocation = React.useRef(false);
+
+  React.useEffect(() => {
+    if (user && userData && !hasPromptedLocation.current) {
+      if (!userData.lat || !userData.lng || userData.lat === 0 || userData.lng === 0) {
+        hasPromptedLocation.current = true;
+        if ('geolocation' in navigator) {
+          navigator.geolocation.getCurrentPosition(
+            async (position) => {
+              try {
+                await updateDoc(doc(db, 'usuarios', user.uid), {
+                  lat: position.coords.latitude,
+                  lng: position.coords.longitude
+                });
+                console.log("Ubicación actualizada automáticamente.");
+              } catch (err) {
+                console.error("Error al actualizar la ubicación automáticamente:", err);
+              }
+            },
+            (error) => {
+              console.error("No se pudo obtener la ubicación automáticamente:", error);
+              alert("Necesitamos tu ubicación para mostrarte cerrajeros cercanos. Por favor habilita el permiso de ubicación en tu navegador.");
+            }
+          );
+        }
+      }
+    }
+  }, [user, userData]);
 
   const handleLogout = async () => {
     try {

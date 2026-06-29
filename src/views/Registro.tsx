@@ -41,7 +41,7 @@ export const Registro = ({ navigate }: { navigate: (v: ViewType) => void }) => {
         },
         (error) => {
           console.error(error);
-          setError('Error al obtener ubicación. Asegúrate de dar permisos.');
+          setError('Necesitamos tu ubicación para mostrarte cerrajeros cercanos. Por favor habilita el permiso de ubicación en tu navegador.');
           setGettingLocation(false);
         }
       );
@@ -55,8 +55,8 @@ export const Registro = ({ navigate }: { navigate: (v: ViewType) => void }) => {
     e.preventDefault();
     if (loading) return;
     
-    if (role === 'Cerrajero' && lat === 0 && lng === 0) {
-      setError('Debes compartir tu ubicación para registrarte como cerrajero.');
+    if (lat === 0 && lng === 0) {
+      setError('Debes compartir tu ubicación para registrarte.');
       return;
     }
 
@@ -77,8 +77,8 @@ export const Registro = ({ navigate }: { navigate: (v: ViewType) => void }) => {
           zone: role === 'Cerrajero' ? zone : '',
           rol: role.toLowerCase(),
           email,
-          lat: role === 'Cerrajero' ? lat : 0,
-          lng: role === 'Cerrajero' ? lng : 0,
+          lat,
+          lng,
           registrationDate: serverTimestamp(),
           suscripcionActiva: false
         });
@@ -177,28 +177,27 @@ export const Registro = ({ navigate }: { navigate: (v: ViewType) => void }) => {
         </div>
 
         {role === 'Cerrajero' && (
-          <>
-            <div>
-              <label className="text-xs text-zinc-500 mb-1 block">Zona de Trabajo (opcional)</label>
-              <div className="relative">
-                <MapPin className="w-5 h-5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input type="text" value={zone} onChange={e => setZone(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-10 pr-4 py-3 text-white focus:border-[#D4AF37] outline-none" placeholder="Ej. Norte" />
-              </div>
+          <div>
+            <label className="text-xs text-zinc-500 mb-1 block">Zona de Trabajo (opcional)</label>
+            <div className="relative">
+              <MapPin className="w-5 h-5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input type="text" value={zone} onChange={e => setZone(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-10 pr-4 py-3 text-white focus:border-[#D4AF37] outline-none" placeholder="Ej. Norte" />
             </div>
-            <div>
-              <label className="text-xs text-zinc-500 mb-1 block">Ubicación GPS (Requerida)</label>
-              <button 
-                type="button" 
-                onClick={getLocation}
-                disabled={gettingLocation}
-                className="w-full bg-zinc-900 border border-zinc-800 hover:border-[#D4AF37] rounded-xl py-3 px-4 text-sm text-zinc-300 flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
-              >
-                <MapPin className="w-5 h-5" />
-                {lat !== 0 && lng !== 0 ? 'Ubicación Guardada ✓' : (gettingLocation ? 'Obteniendo...' : 'Compartir mi Ubicación')}
-              </button>
-            </div>
-          </>
+          </div>
         )}
+        
+        <div>
+          <label className="text-xs text-zinc-500 mb-1 block">Ubicación GPS (Requerida)</label>
+          <button 
+            type="button" 
+            onClick={getLocation}
+            disabled={gettingLocation}
+            className="w-full bg-zinc-900 border border-zinc-800 hover:border-[#D4AF37] rounded-xl py-3 px-4 text-sm text-zinc-300 flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+          >
+            <MapPin className="w-5 h-5" />
+            {lat !== 0 && lng !== 0 ? 'Ubicación Guardada ✓' : (gettingLocation ? 'Obteniendo...' : 'Compartir mi Ubicación')}
+          </button>
+        </div>
         <div>
           <label className="text-xs text-zinc-500 mb-1 block">Contraseña</label>
           <div className="relative">
