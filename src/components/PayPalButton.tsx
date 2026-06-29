@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
 interface PayPalButtonProps {
   hostedButtonId: string;
@@ -7,6 +7,8 @@ interface PayPalButtonProps {
 export const PayPalButton: React.FC<PayPalButtonProps> = ({ hostedButtonId }) => {
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const containerId = `paypal-container-${hostedButtonId}`;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const hasRendered = useRef(false);
 
   useEffect(() => {
     const existingScript = document.getElementById('paypal-sdk-hosted-buttons');
@@ -23,18 +25,34 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({ hostedButtonId }) =>
   }, []);
 
   useEffect(() => {
-    if (scriptLoaded && (window as any).paypal) {
-      // Clear container if it has content to prevent duplicates in strict mode
-      const container = document.getElementById(containerId);
+    if (scriptLoaded && (window as any).paypal && !hasRendered.current) {
+      const container = containerRef.current;
       if (container) {
         container.innerHTML = '';
       }
       
-      (window as any).paypal.HostedButtons({
-        hostedButtonId: hostedButtonId,
-      }).render(`#${containerId}`);
+      try {
+        (window as any).paypal.HostedButtons({
+          hostedButtonId: hostedButtonId,
+        }).render(`#${containerId}`);
+        hasRendered.current = true;
+      } catch (err) {
+        console.error("Error rendering PayPal button:", err);
+      }
     }
+
+    return () => {
+      // Cleanup to prevent React conflicts on unmount
+      if (containerRef.current) {
+        containerRef.current.innerHTML = '';
+      }
+      hasRendered.current = false;
+    };
   }, [scriptLoaded, hostedButtonId, containerId]);
 
-  return <div id={containerId} className="w-full min-h-[50px] flex justify-center"></div>;
+  return (
+    <div key={containerId} className="w-full min-h-[50px] flex justify-center">
+      <div id={containerId} ref={containerRef} className="w-full"></div>
+    </div>
+  );
 };

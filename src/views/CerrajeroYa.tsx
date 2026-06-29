@@ -202,7 +202,7 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
               className="w-full bg-gradient-to-r from-[#D4AF37] to-[#8A6D3B] hover:opacity-90 text-black font-bold py-4 rounded-xl shadow-none transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Navigation className="w-5 h-5" />}
-              {loading ? 'Solicitando...' : 'Solicitar Cerrajero'}
+              <span>{loading ? 'Solicitando...' : 'Solicitar Cerrajero'}</span>
             </button>
 
             <div>
