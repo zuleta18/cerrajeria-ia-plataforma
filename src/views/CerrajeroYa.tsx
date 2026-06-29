@@ -67,20 +67,34 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
       try {
         let q = query(
           collection(db, 'usuarios'),
-          where('rol', '==', 'cerrajero'),
-          where('country', '==', userData.country)
+          where('rol', '==', 'cerrajero')
         );
 
         const querySnapshot = await getDocs(q);
         let locksmiths = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
-        console.log(`Documentos devueltos de Firestore (cerrajeros en país ${userData.country}):`, locksmiths.length);
+        console.log(`Documentos devueltos de Firestore (total cerrajeros):`, locksmiths.length);
 
-        // Filter by city if available, otherwise just keep country filter
-        if (userData.city) {
-          const sameCity = locksmiths.filter(l => l.city?.toLowerCase() === userData.city?.toLowerCase());
+        const normalize = (str: string) => {
+          if (!str) return '';
+          return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        };
+
+        const userCountry = normalize(userData.country);
+        const userCity = normalize(userData.city);
+
+        // Filter by country locally to avoid case/accent issues
+        if (userCountry) {
+          locksmiths = locksmiths.filter(l => normalize(l.country) === userCountry);
+          console.log(`Cerrajeros después de filtrar por país (${userData.country}):`, locksmiths.length);
+        }
+
+        // Filter by city if available
+        if (userCity) {
+          const sameCity = locksmiths.filter(l => normalize(l.city) === userCity);
           if (sameCity.length > 0) {
             locksmiths = sameCity;
           }
+          console.log(`Cerrajeros después de filtrar por ciudad (${userData.city}):`, locksmiths.length);
         }
         
         // Filter only active subscriptions (or free days) and valid coordinates
@@ -118,9 +132,13 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
           distanceNum: calculateDistance(userLat, userLng, l.lat, l.lng),
           distance: calculateDistance(userLat, userLng, l.lat, l.lng).toFixed(1) + ' km',
           rating: 5.0
-        })).sort((a, b) => a.distanceNum - b.distanceNum);
+        }));
+
+        // Filter by 20km radius
+        const withinRadius = withDistance.filter(l => l.distanceNum <= 20).sort((a, b) => a.distanceNum - b.distanceNum);
+        console.log(`Cerrajeros en un radio de 20km:`, withinRadius.length);
         
-        setActiveLocksmiths(withDistance);
+        setActiveLocksmiths(withinRadius);
       } catch (error) {
         console.error("Error fetching locksmiths:", error);
       }
@@ -129,7 +147,11 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
     fetchLocksmiths();
   }, [user, userData]);
 
-  const handleSolicitar = async () => {
+  const handleSolicitar = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     if (!user) {
       navigate('Login');
       return;
@@ -163,7 +185,11 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
     }
   };
 
-  const handleCancelar = async () => {
+  const handleCancelar = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     if (solicitud) {
       const currentId = solicitud.id;
       // Optimistic update to clear UI immediately and avoid getting stuck
@@ -258,7 +284,11 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
                     Cancelar
                   </button>
                   <button 
-                    onClick={async () => {
+                    onClick={async (e) => {
+                      if (e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }
                       await handleCancelar();
                       handleSolicitar();
                     }}
