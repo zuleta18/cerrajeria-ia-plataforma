@@ -7,7 +7,7 @@ import { collection, addDoc, query, where, onSnapshot, getDocs, updateDoc, doc }
 import { calculateFreeDays } from '../utils/date';
 
 export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) => {
-  const { user, userData, role, isRepairingLocation } = useAuth();
+  const { user, userData, role, isRepairingLocation, repairLocationStatus } = useAuth();
   const [solicitud, setSolicitud] = useState<Solicitud | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -323,7 +323,7 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
                     <p>Total en BD: {debugInfo.totalFound}</p>
                     <p>Buscando en: {debugInfo.userCountry || 'N/A'}, {debugInfo.userCity || 'N/A'}</p>
                     <p>Coords cliente: {debugInfo.userLat ? `${debugInfo.userLat.toFixed(4)}, ${debugInfo.userLng.toFixed(4)}` : 'No registradas'}</p>
-                    <p>Reparando ubicación: {isRepairingLocation ? 'Sí...' : 'No'}</p>
+                    <p>Reparando ubicación: {repairLocationStatus}</p>
                     
                     <div className="mt-2 space-y-2">
                       {debugInfo.locksmiths.map((l: any, i: number) => (

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { auth, db } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, getDoc, updateDoc } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
@@ -9,9 +9,10 @@ interface AuthContextType {
   userData: any | null;
   loading: boolean;
   isRepairingLocation: boolean;
+  repairLocationStatus: string;
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, role: null, userData: null, loading: true, isRepairingLocation: false });
+const AuthContext = createContext<AuthContextType>({ user: null, role: null, userData: null, loading: true, isRepairingLocation: false, repairLocationStatus: 'No' });
 
 export const useAuth = () => useContext(AuthContext);
 
@@ -21,14 +22,61 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [userData, setUserData] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [isRepairingLocation, setIsRepairingLocation] = useState(false);
-  const hasPromptedLocation = useRef(false);
+  const [repairLocationStatus, setRepairLocationStatus] = useState('No');
+  
+  // Ref to ensure repair runs only once per user session
+  const repairAttemptedForUid = useRef<string | null>(null);
 
   useEffect(() => {
     let unsubscribeDoc: (() => void) | undefined;
     
-    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
+      
       if (currentUser) {
+        // Independent location repair logic as requested
+        if (repairAttemptedForUid.current !== currentUser.uid) {
+          repairAttemptedForUid.current = currentUser.uid;
+          
+          try {
+            const initialDoc = await getDoc(doc(db, 'usuarios', currentUser.uid));
+            if (initialDoc.exists()) {
+              const d = initialDoc.data();
+              if (d.lat === undefined || d.lat === null || d.lng === undefined || d.lng === null || d.lat === 0 || d.lng === 0) {
+                setIsRepairingLocation(true);
+                setRepairLocationStatus('Sí...');
+                
+                if ('geolocation' in navigator) {
+                  navigator.geolocation.getCurrentPosition(
+                    async (position) => {
+                      try {
+                        await updateDoc(doc(db, 'usuarios', currentUser.uid), {
+                          lat: position.coords.latitude,
+                          lng: position.coords.longitude
+                        });
+                        setRepairLocationStatus('Completado');
+                        setIsRepairingLocation(false);
+                      } catch (err: any) {
+                        setRepairLocationStatus(`Error BD: ${err.message}`);
+                        setIsRepairingLocation(false);
+                      }
+                    },
+                    (error) => {
+                      setRepairLocationStatus(`Error GPS: ${error.message}`);
+                      setIsRepairingLocation(false);
+                    }
+                  );
+                } else {
+                  setRepairLocationStatus('Error: GPS no soportado');
+                  setIsRepairingLocation(false);
+                }
+              }
+            }
+          } catch (err: any) {
+             setRepairLocationStatus(`Error leyendo doc: ${err.message}`);
+          }
+        }
+
         unsubscribeDoc = onSnapshot(doc(db, 'usuarios', currentUser.uid), (userDoc) => {
           if (userDoc.exists()) {
             const data = userDoc.data();
@@ -37,38 +85,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               : data.role;
             setRole(userRole as 'Cliente' | 'Cerrajero');
             setUserData(data);
-
-            // Auto-repair location
-            if (!hasPromptedLocation.current && (!data.lat || !data.lng || data.lat === 0 || data.lng === 0)) {
-              hasPromptedLocation.current = true;
-              setIsRepairingLocation(true);
-              if ('geolocation' in navigator) {
-                console.log(`Intentando obtener ubicación para rol: ${userRole}`);
-                navigator.geolocation.getCurrentPosition(
-                  async (position) => {
-                    try {
-                      await updateDoc(doc(db, 'usuarios', currentUser.uid), {
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude
-                      });
-                      console.log("Ubicación actualizada automáticamente.");
-                    } catch (err) {
-                      console.error("Error al actualizar la ubicación automáticamente:", err);
-                    } finally {
-                      setIsRepairingLocation(false);
-                    }
-                  },
-                  (error) => {
-                    console.error("No se pudo obtener la ubicación automáticamente:", error);
-                    setIsRepairingLocation(false);
-                    alert("Necesitamos tu ubicación para mostrarte cerrajeros cercanos. Por favor habilita el permiso de ubicación en tu navegador.");
-                  }
-                );
-              } else {
-                setIsRepairingLocation(false);
-              }
-            }
-
           } else {
             setRole(null);
             setUserData(null);
@@ -85,7 +101,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           unsubscribeDoc();
           unsubscribeDoc = undefined;
         }
-        hasPromptedLocation.current = false;
+        repairAttemptedForUid.current = null;
         setRole(null);
         setUserData(null);
         setLoading(false);
@@ -101,7 +117,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, role, userData, loading, isRepairingLocation }}>
+    <AuthContext.Provider value={{ user, role, userData, loading, isRepairingLocation, repairLocationStatus }}>
       {!loading && children}
     </AuthContext.Provider>
   );
