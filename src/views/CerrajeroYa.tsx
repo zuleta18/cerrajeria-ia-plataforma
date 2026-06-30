@@ -154,6 +154,8 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
           userCity: userData.city,
           userLat,
           userLng,
+          withinRadiusLength: withinRadius.length,
+          withinRadiusData: JSON.stringify(withinRadius, null, 2),
           locksmiths: filteredLocksmiths.map(l => ({
             name: l.name || l.email || 'Sin nombre',
             country: l.country,
@@ -313,6 +315,12 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
                     <p>Buscando en: {debugInfo.userCountry || 'N/A'}, {debugInfo.userCity || 'N/A'}</p>
                     <p>Coords cliente: {debugInfo.userLat ? `${Number(debugInfo.userLat).toFixed(4)}, ${Number(debugInfo.userLng).toFixed(4)}` : 'No registradas'}</p>
                     <p>Reparando ubicación: {repairLocationStatus}</p>
+                    <p>withinRadius.length (en lógica): {debugInfo.withinRadiusLength}</p>
+                    <p>activeLocksmiths.length (en UI): {activeLocksmiths.length}</p>
+                    <p className="mt-2 mb-1 font-bold text-zinc-400">Contenido exacto de withinRadius:</p>
+                    <pre className="bg-zinc-900 p-2 rounded text-zinc-500 text-[8px] overflow-x-auto mb-4 border border-zinc-800">
+{debugInfo.withinRadiusData}
+                    </pre>
                     <p className="mt-2 mb-1 font-bold text-zinc-400">Código de filtrado principal:</p>
                     <pre className="bg-zinc-900 p-2 rounded text-zinc-500 text-[8px] overflow-x-auto mb-4 border border-zinc-800">
 {`const isPaid = l.suscripcionActiva === true || String(l.suscripcionActiva) === "true";
