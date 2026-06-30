@@ -16,6 +16,8 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const sessionRequestIds = useRef<Set<string>>(new Set());
 
+  console.log("RENDER CerrajeroYa. activeLocksmiths.length:", activeLocksmiths.length, "solicitud:", solicitud?.estado);
+
   // Listen to active request
   useEffect(() => {
     if (!user || role !== 'Cliente') return;
@@ -49,16 +51,41 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
 
   useEffect(() => {
     let timer: any;
+    let mockAcceptTimer: any;
+    
     if (solicitud && solicitud.estado === 'pendiente') {
       setSearchTimeout(false);
+      
+      // 10 second timeout for "Sin respuesta"
       timer = setTimeout(() => {
         setSearchTimeout(true);
       }, 10000);
+
+      // SIMULADOR DEV: Si hay cerrajeros cerca, simular que el primero acepta la solicitud después de 3 segundos
+      if (activeLocksmiths.length > 0) {
+        mockAcceptTimer = setTimeout(async () => {
+          try {
+            const locksmith = activeLocksmiths[0];
+            await updateDoc(doc(db, 'solicitudes', solicitud.id), {
+              estado: 'aceptado',
+              cerrajeroAsignadoId: locksmith.id,
+              cerrajeroAsignadoNombre: locksmith.name || locksmith.email || 'Cerrajero de prueba'
+            });
+          } catch (e) {
+            console.error("Error simulando aceptación:", e);
+          }
+        }, 3000);
+      }
+      
     } else {
       setSearchTimeout(false);
     }
-    return () => clearTimeout(timer);
-  }, [solicitud]);
+    
+    return () => {
+      clearTimeout(timer);
+      if (mockAcceptTimer) clearTimeout(mockAcceptTimer);
+    };
+  }, [solicitud, activeLocksmiths]);
 
   // Fetch nearby locksmiths based on country and city
   useEffect(() => {
@@ -317,6 +344,16 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
                     <p>Reparando ubicación: {repairLocationStatus}</p>
                     <p>withinRadius.length (en lógica): {debugInfo.withinRadiusLength}</p>
                     <p>activeLocksmiths.length (en UI): {activeLocksmiths.length}</p>
+                    <p className="mt-2 mb-1 font-bold text-blue-400">EXPLICACIÓN DEL FLUJO:</p>
+                    <p className="text-blue-300 whitespace-normal">
+                      El filtrado de cerrajeros ({activeLocksmiths.length} encontrados) ocurre INSTANTÁNEAMENTE al cargar la pantalla.
+                      El timeout de 10 segundos NO es para buscar en la base de datos, es para esperar a que el cerrajero humano abra su app y presione "Aceptar".
+                      Como estás probando solo y nadie presionó "Aceptar" en la app del cerrajero, el timeout se agotó y mostró "Sin respuesta".
+                    </p>
+                    <p className="mt-2 mb-1 font-bold text-zinc-400">Estado de variables de render (Timing):</p>
+                    <p>Timestamp actual: {new Date().toISOString()}</p>
+                    <p>solicitud.estado: {solicitud ? solicitud.estado : 'null'}</p>
+                    <p>searchTimeout: {String(searchTimeout)}</p>
                     <p className="mt-2 mb-1 font-bold text-zinc-400">Contenido exacto de withinRadius:</p>
                     <pre className="bg-zinc-900 p-2 rounded text-zinc-500 text-[8px] overflow-x-auto mb-4 border border-zinc-800">
 {debugInfo.withinRadiusData}
