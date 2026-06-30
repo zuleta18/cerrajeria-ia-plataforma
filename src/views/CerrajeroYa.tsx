@@ -13,7 +13,6 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
   const [error, setError] = useState('');
   const [activeLocksmiths, setActiveLocksmiths] = useState<any[]>([]);
   const [searchTimeout, setSearchTimeout] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<any>(null);
   const sessionRequestIds = useRef<Set<string>>(new Set());
 
   // Listen to active request
@@ -77,41 +76,11 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
 
         const normalize = (str: string) => {
           if (!str) return '';
-          return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+          return String(str).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
         };
 
         const userCountry = normalize(userData.country);
         const userCity = normalize(userData.city);
-
-        let locksmiths = [...allLocksmiths];
-
-        // Filter by country locally to avoid case/accent issues
-        if (userCountry) {
-          locksmiths = locksmiths.filter(l => normalize(l.country) === userCountry);
-          console.log(`Cerrajeros después de filtrar por país (${userData.country}):`, locksmiths.length);
-        }
-
-        // Filter by city if available
-        if (userCity) {
-          const sameCity = locksmiths.filter(l => normalize(l.city) === userCity);
-          if (sameCity.length > 0) {
-            locksmiths = sameCity;
-          }
-          console.log(`Cerrajeros después de filtrar por ciudad (${userData.city}):`, locksmiths.length);
-        }
-        
-        // Filter only active subscriptions (or free days) and valid coordinates
-        const active = locksmiths.filter(l => {
-          const isPaid = l.suscripcionActiva;
-          const hasFreeDays = calculateFreeDays(l.registrationDate) > 0;
-          const isActive = isPaid || hasFreeDays;
-          
-          // Require lat/lng for distance calculation
-          const hasLocation = l.lat !== undefined && l.lng !== undefined && l.lat !== 0 && l.lng !== 0;
-          
-          return isActive && hasLocation;
-        });
-        console.log(`Cerrajeros activos después del filtro (suscripción o gratis y ubicación):`, active.length);
 
         // Helper for Haversine distance
         const calculateDistance = (lat1: any, lon1: any, lat2: any, lon2: any) => {
@@ -138,57 +107,40 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
         const userLat = userData.lat || 4.6097; // fallback to Bogota
         const userLng = userData.lng || -74.0817;
 
-        // Calculate real distance
-        const withDistance = active.map(l => ({
-          ...l,
-          distanceNum: calculateDistance(userLat, userLng, l.lat, l.lng),
-          distance: calculateDistance(userLat, userLng, l.lat, l.lng).toFixed(1) + ' km',
-          rating: 5.0
-        }));
+        let filteredLocksmiths = allLocksmiths.map(l => {
+          let reason = [];
+          
+          if (userCountry && normalize(l.country) !== userCountry) reason.push('País distinto');
+          if (userCity && normalize(l.city) !== userCity) reason.push('Ciudad distinta');
+          
+          const isPaid = l.suscripcionActiva === true || String(l.suscripcionActiva) === "true";
+          const hasFreeDays = calculateFreeDays(l.registrationDate) > 0;
+          if (!isPaid && !hasFreeDays) reason.push('Inactivo/Sin pago');
+          
+          if (l.lat === undefined || l.lng === undefined || l.lat === null || l.lng === null || l.lat === '' || l.lng === '') {
+            reason.push('Sin ubicación');
+          }
+          
+          let dist = 999;
+          if (reason.length === 0) {
+            dist = calculateDistance(userLat, userLng, l.lat, l.lng);
+            if (dist > 20) reason.push(`Lejos (${dist.toFixed(1)}km)`);
+          }
+          
+          return {
+            ...l,
+            distanceNum: dist,
+            distance: dist !== 999 ? dist.toFixed(1) + ' km' : 'N/A',
+            rating: 5.0,
+            passed: reason.length === 0,
+            reason: reason.join(', ')
+          };
+        });
 
-        // Filter by 20km radius
-        const withinRadius = withDistance.filter(l => l.distanceNum <= 20).sort((a, b) => a.distanceNum - b.distanceNum);
-        console.log(`Cerrajeros en un radio de 20km:`, withinRadius.length);
+        const withinRadius = filteredLocksmiths.filter(l => l.passed).sort((a, b) => a.distanceNum - b.distanceNum);
+        console.log(`Cerrajeros activos, en misma ciudad y en un radio de 20km:`, withinRadius.length);
         
         setActiveLocksmiths(withinRadius);
-
-        // Build debug info
-        const debugData = {
-          totalFound: allLocksmiths.length,
-          userCountry: userData.country,
-          userCity: userData.city,
-          userLat: userData.lat,
-          userLng: userData.lng,
-          locksmiths: allLocksmiths.map(l => {
-            let reason = [];
-            if (userCountry && normalize(l.country) !== userCountry) reason.push('País distinto');
-            if (userCity && normalize(l.city) !== userCity) reason.push('Ciudad distinta');
-            
-            const isPaid = l.suscripcionActiva;
-            const hasFreeDays = calculateFreeDays(l.registrationDate) > 0;
-            if (!isPaid && !hasFreeDays) reason.push('Inactivo/Sin pago');
-            
-            if (l.lat === undefined || l.lng === undefined || l.lat === 0 || l.lng === 0) reason.push('Sin ubicación');
-            
-            let dist = 999;
-            if (l.lat !== undefined && l.lng !== undefined) {
-               dist = calculateDistance(userLat, userLng, l.lat, l.lng);
-               if (dist > 20) reason.push(`Lejos (${dist.toFixed(1)}km)`);
-            }
-            
-            return {
-              name: l.name || l.email || 'Sin nombre',
-              country: l.country,
-              city: l.city,
-              lat: l.lat,
-              lng: l.lng,
-              distance: dist,
-              passed: reason.length === 0,
-              reason: reason.join(', ')
-            };
-          })
-        };
-        setDebugInfo(debugData);
       } catch (error) {
         console.error("Error fetching locksmiths:", error);
       }
@@ -326,26 +278,6 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
                 <XCircle className="w-12 h-12 text-zinc-500 mb-4" />
                 <h3 className="text-xl font-bold text-white mb-2">Sin respuesta</h3>
                 <p className="text-zinc-400 text-sm mb-6">No hay cerrajeros disponibles en tu zona por el momento.</p>
-
-                {debugInfo && (
-                  <div className="w-full bg-zinc-950 p-4 rounded-lg border border-zinc-800 text-left text-[10px] text-zinc-500 mb-6 font-mono overflow-y-auto max-h-48 custom-scrollbar">
-                    <p className="font-bold text-zinc-400 mb-2 border-b border-zinc-800 pb-1">Diagnóstico (Solo Dev):</p>
-                    <p>Total en BD: {debugInfo.totalFound}</p>
-                    <p>Buscando en: {debugInfo.userCountry || 'N/A'}, {debugInfo.userCity || 'N/A'}</p>
-                    <p>Coords cliente: {debugInfo.userLat ? `${Number(debugInfo.userLat).toFixed(4)}, ${Number(debugInfo.userLng).toFixed(4)}` : 'No registradas'}</p>
-                    <p>Reparando ubicación: {repairLocationStatus}</p>
-                    
-                    <div className="mt-2 space-y-2">
-                      {debugInfo.locksmiths.map((l: any, i: number) => (
-                        <div key={i} className="pl-2 border-l border-zinc-800">
-                          <p className="text-zinc-400">{l.name} <span className={l.passed ? 'text-green-500' : 'text-red-500'}>[{l.passed ? 'OK' : 'DESCARTADO'}]</span></p>
-                          <p>{l.country || 'N/A'}, {l.city || 'N/A'} | {l.lat ? `${Number(l.lat).toFixed(4)}, ${Number(l.lng).toFixed(4)}` : 'Sin lat/lng'} | Distancia: {l.distance !== 999 ? l.distance.toFixed(3) + ' km' : 'N/A'}</p>
-                          {!l.passed && <p className="text-red-400/70">Motivo: {l.reason}</p>}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 <div className="flex gap-3 w-full">
                   <button 
