@@ -114,15 +114,24 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
         console.log(`Cerrajeros activos después del filtro (suscripción o gratis y ubicación):`, active.length);
 
         // Helper for Haversine distance
-        const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-          if (!lat1 || !lon1 || !lat2 || !lon2) return 999;
+        const calculateDistance = (lat1: any, lon1: any, lat2: any, lon2: any) => {
+          const parseCoord = (val: any) => {
+            if (typeof val === 'string') return Number(val.replace(',', '.'));
+            return Number(val);
+          };
+          const l1 = parseCoord(lat1);
+          const ln1 = parseCoord(lon1);
+          const l2 = parseCoord(lat2);
+          const ln2 = parseCoord(lon2);
+          if (isNaN(l1) || isNaN(ln1) || isNaN(l2) || isNaN(ln2) || (l1===0 && ln1===0) || (l2===0 && ln2===0)) return 999;
           const R = 6371; // km
-          const dLat = (lat2 - lat1) * Math.PI / 180;
-          const dLon = (lon2 - lon1) * Math.PI / 180;
+          const dLat = (l2 - l1) * Math.PI / 180;
+          const dLon = (ln2 - ln1) * Math.PI / 180;
           const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                    Math.cos(l1 * Math.PI / 180) * Math.cos(l2 * Math.PI / 180) *
                     Math.sin(dLon/2) * Math.sin(dLon/2);
-          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+          const clampedA = Math.min(1, Math.max(0, a));
+          const c = 2 * Math.atan2(Math.sqrt(clampedA), Math.sqrt(1-clampedA));
           return R * c;
         };
 
@@ -162,7 +171,7 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
             if (l.lat === undefined || l.lng === undefined || l.lat === 0 || l.lng === 0) reason.push('Sin ubicación');
             
             let dist = 999;
-            if (l.lat && l.lng) {
+            if (l.lat !== undefined && l.lng !== undefined) {
                dist = calculateDistance(userLat, userLng, l.lat, l.lng);
                if (dist > 20) reason.push(`Lejos (${dist.toFixed(1)}km)`);
             }
@@ -173,6 +182,7 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
               city: l.city,
               lat: l.lat,
               lng: l.lng,
+              distance: dist,
               passed: reason.length === 0,
               reason: reason.join(', ')
             };
@@ -322,14 +332,14 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
                     <p className="font-bold text-zinc-400 mb-2 border-b border-zinc-800 pb-1">Diagnóstico (Solo Dev):</p>
                     <p>Total en BD: {debugInfo.totalFound}</p>
                     <p>Buscando en: {debugInfo.userCountry || 'N/A'}, {debugInfo.userCity || 'N/A'}</p>
-                    <p>Coords cliente: {debugInfo.userLat ? `${debugInfo.userLat.toFixed(4)}, ${debugInfo.userLng.toFixed(4)}` : 'No registradas'}</p>
+                    <p>Coords cliente: {debugInfo.userLat ? `${Number(debugInfo.userLat).toFixed(4)}, ${Number(debugInfo.userLng).toFixed(4)}` : 'No registradas'}</p>
                     <p>Reparando ubicación: {repairLocationStatus}</p>
                     
                     <div className="mt-2 space-y-2">
                       {debugInfo.locksmiths.map((l: any, i: number) => (
                         <div key={i} className="pl-2 border-l border-zinc-800">
                           <p className="text-zinc-400">{l.name} <span className={l.passed ? 'text-green-500' : 'text-red-500'}>[{l.passed ? 'OK' : 'DESCARTADO'}]</span></p>
-                          <p>{l.country || 'N/A'}, {l.city || 'N/A'} | {l.lat ? `${l.lat.toFixed(4)}, ${l.lng.toFixed(4)}` : 'Sin lat/lng'}</p>
+                          <p>{l.country || 'N/A'}, {l.city || 'N/A'} | {l.lat ? `${Number(l.lat).toFixed(4)}, ${Number(l.lng).toFixed(4)}` : 'Sin lat/lng'} | Distancia: {l.distance !== 999 ? l.distance.toFixed(3) + ' km' : 'N/A'}</p>
                           {!l.passed && <p className="text-red-400/70">Motivo: {l.reason}</p>}
                         </div>
                       ))}
