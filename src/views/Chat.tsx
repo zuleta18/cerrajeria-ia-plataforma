@@ -11,6 +11,7 @@ export const Chat = ({ navigate }: { navigate: (v: ViewType) => void }) => {
   const [newMessage, setNewMessage] = useState('');
   const [solicitud, setSolicitud] = useState<Solicitud | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -34,6 +35,10 @@ export const Chat = ({ navigate }: { navigate: (v: ViewType) => void }) => {
         setSolicitud(null);
       }
       setLoading(false);
+    }, (err) => {
+      console.error("Error fetching solicitud:", err);
+      setError("Error al cargar la solicitud de chat: " + err.message);
+      setLoading(false);
     });
 
     return () => unsubscribeSolicitud();
@@ -44,8 +49,7 @@ export const Chat = ({ navigate }: { navigate: (v: ViewType) => void }) => {
 
     const q = query(
       collection(db, 'mensajes'),
-      where('solicitudId', '==', solicitud.id),
-      orderBy('timestamp', 'asc')
+      where('solicitudId', '==', solicitud.id)
     );
 
     const unsubscribeMessages = onSnapshot(q, (snapshot) => {
@@ -53,8 +57,17 @@ export const Chat = ({ navigate }: { navigate: (v: ViewType) => void }) => {
       snapshot.forEach(doc => {
         msgs.push({ ...doc.data(), id: doc.id } as Mensaje);
       });
+      // Sort client-side to avoid requiring a composite index in Firestore
+      msgs.sort((a, b) => {
+        const timeA = a.timestamp?.toMillis ? a.timestamp.toMillis() : (a.timestamp ? Number(a.timestamp) : Date.now());
+        const timeB = b.timestamp?.toMillis ? b.timestamp.toMillis() : (b.timestamp ? Number(b.timestamp) : Date.now());
+        return timeA - timeB;
+      });
       setMessages(msgs);
       setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+    }, (err) => {
+      console.error("Error fetching messages:", err);
+      setError("Error al cargar mensajes: " + err.message);
     });
 
     return () => unsubscribeMessages();
@@ -66,6 +79,7 @@ export const Chat = ({ navigate }: { navigate: (v: ViewType) => void }) => {
 
     const text = newMessage;
     setNewMessage('');
+    setError(null);
 
     try {
       await addDoc(collection(db, 'mensajes'), {
@@ -74,8 +88,9 @@ export const Chat = ({ navigate }: { navigate: (v: ViewType) => void }) => {
         texto: text,
         timestamp: serverTimestamp()
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error al enviar mensaje", error);
+      setError("Error al enviar: " + error.message);
     }
   };
 
@@ -97,7 +112,7 @@ export const Chat = ({ navigate }: { navigate: (v: ViewType) => void }) => {
     );
   }
 
-  const otherName = role === 'Cliente' ? (solicitud.cerrajeroNombre || 'Cerrajero') : solicitud.clienteNombre;
+  const otherName = role === 'Cliente' ? (solicitud.cerrajeroNombre || (solicitud as any).cerrajeroAsignadoNombre || 'Cerrajero') : (solicitud.clienteNombre || 'Cliente');
 
   return (
     <div className="flex flex-col h-[calc(100vh-140px)] bg-zinc-950">
@@ -113,6 +128,12 @@ export const Chat = ({ navigate }: { navigate: (v: ViewType) => void }) => {
           <p className="text-xs text-[#D4AF37]">En camino</p>
         </div>
       </div>
+
+      {error && (
+        <div className="bg-red-500/10 text-red-500 p-3 mx-4 mt-4 rounded-lg text-sm border border-red-500/20">
+          {error}
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 ? (
