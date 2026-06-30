@@ -13,6 +13,7 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
   const [error, setError] = useState('');
   const [activeLocksmiths, setActiveLocksmiths] = useState<any[]>([]);
   const [searchTimeout, setSearchTimeout] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
   const sessionRequestIds = useRef<Set<string>>(new Set());
 
   // Listen to active request
@@ -114,7 +115,8 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
           if (userCity && normalize(l.city) !== userCity) reason.push('Ciudad distinta');
           
           const isPaid = l.suscripcionActiva === true || String(l.suscripcionActiva) === "true";
-          const hasFreeDays = calculateFreeDays(l.registrationDate) > 0;
+          const freeDays = calculateFreeDays(l.registrationDate);
+          const hasFreeDays = freeDays > 0;
           if (!isPaid && !hasFreeDays) reason.push('Inactivo/Sin pago');
           
           if (l.lat === undefined || l.lng === undefined || l.lat === null || l.lng === null || l.lat === '' || l.lng === '') {
@@ -133,7 +135,10 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
             distance: dist !== 999 ? dist.toFixed(1) + ' km' : 'N/A',
             rating: 5.0,
             passed: reason.length === 0,
-            reason: reason.join(', ')
+            reason: reason.join(', '),
+            suscripcionActiva: l.suscripcionActiva,
+            isPaid,
+            freeDays
           };
         });
 
@@ -141,6 +146,28 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
         console.log(`Cerrajeros activos, en misma ciudad y en un radio de 20km:`, withinRadius.length);
         
         setActiveLocksmiths(withinRadius);
+
+        // Build debug info
+        setDebugInfo({
+          totalFound: allLocksmiths.length,
+          userCountry: userData.country,
+          userCity: userData.city,
+          userLat,
+          userLng,
+          locksmiths: filteredLocksmiths.map(l => ({
+            name: l.name || l.email || 'Sin nombre',
+            country: l.country,
+            city: l.city,
+            lat: l.lat,
+            lng: l.lng,
+            distance: l.distance,
+            passed: l.passed,
+            reason: l.reason,
+            suscripcionActiva: l.suscripcionActiva,
+            isPaid: l.isPaid,
+            freeDays: l.freeDays
+          }))
+        });
       } catch (error) {
         console.error("Error fetching locksmiths:", error);
       }
@@ -278,6 +305,45 @@ export const CerrajeroYa = ({ navigate }: { navigate: (v: ViewType) => void }) =
                 <XCircle className="w-12 h-12 text-zinc-500 mb-4" />
                 <h3 className="text-xl font-bold text-white mb-2">Sin respuesta</h3>
                 <p className="text-zinc-400 text-sm mb-6">No hay cerrajeros disponibles en tu zona por el momento.</p>
+
+                {debugInfo && (
+                  <div className="w-full bg-zinc-950 p-4 rounded-lg border border-zinc-800 text-left text-[10px] text-zinc-500 mb-6 font-mono overflow-y-auto max-h-96 custom-scrollbar">
+                    <p className="font-bold text-zinc-400 mb-2 border-b border-zinc-800 pb-1">Diagnóstico (Solo Dev):</p>
+                    <p>Total en BD: {debugInfo.totalFound}</p>
+                    <p>Buscando en: {debugInfo.userCountry || 'N/A'}, {debugInfo.userCity || 'N/A'}</p>
+                    <p>Coords cliente: {debugInfo.userLat ? `${Number(debugInfo.userLat).toFixed(4)}, ${Number(debugInfo.userLng).toFixed(4)}` : 'No registradas'}</p>
+                    <p>Reparando ubicación: {repairLocationStatus}</p>
+                    <p className="mt-2 mb-1 font-bold text-zinc-400">Código de filtrado principal:</p>
+                    <pre className="bg-zinc-900 p-2 rounded text-zinc-500 text-[8px] overflow-x-auto mb-4 border border-zinc-800">
+{`const isPaid = l.suscripcionActiva === true || String(l.suscripcionActiva) === "true";
+const freeDays = calculateFreeDays(l.registrationDate);
+const hasFreeDays = freeDays > 0;
+if (!isPaid && !hasFreeDays) reason.push('Inactivo/Sin pago');
+...
+dist = calculateDistance(userLat, userLng, l.lat, l.lng);
+if (dist > 20) reason.push(\`Lejos (\${dist.toFixed(1)}km)\`);
+...
+const withinRadius = filteredLocksmiths.filter(l => l.passed)`}
+                    </pre>
+
+                    <div className="mt-2 space-y-3">
+                      {debugInfo.locksmiths.map((l: any, i: number) => (
+                        <div key={i} className="pl-2 border-l-2 border-zinc-700 bg-zinc-900/50 p-2 rounded">
+                          <p className="text-zinc-300 font-bold mb-1">{l.name}</p>
+                          <p>Ubicación: {l.country || 'N/A'}, {l.city || 'N/A'}</p>
+                          <p>Lat/Lng: {l.lat ? `${Number(l.lat).toFixed(4)}, ${Number(l.lng).toFixed(4)}` : 'N/A'}</p>
+                          <p>Distancia: {l.distance !== 'N/A' ? l.distance : 'N/A'}</p>
+                          <p>suscripcionActiva: {String(l.suscripcionActiva)} (Evaluado isPaid: {String(l.isPaid)})</p>
+                          <p>Días gratis restantes: {l.freeDays}</p>
+                          <p className="mt-1 font-semibold">
+                            PASA_TODOS_LOS_FILTROS: <span className={l.passed ? 'text-green-500' : 'text-red-500'}>{l.passed ? 'SI' : 'NO'}</span>
+                          </p>
+                          {!l.passed && <p className="text-red-400">Motivo exacto: {l.reason}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex gap-3 w-full">
                   <button 
